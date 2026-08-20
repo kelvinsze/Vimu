@@ -10,6 +10,7 @@
 		050CD3908ED621E3E684DCFA /* SSDPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 04236877F71D516A35C7D387 /* SSDPService.swift */; };
 		116528DEB249B6A1E8AAF64D /* DLNASource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7E111820E5FDDEC778706A /* DLNASource.swift */; };
 		13A36F6921F26DFAE6911AB7 /* SOAPParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748F18B451ED56B098E87EA6 /* SOAPParser.swift */; };
+		140316743254A66582C1B1C3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B7AF5EC67F95AC56598EBE84 /* LaunchScreen.storyboard */; };
 		28623ABB38ED6DC197B93D7F /* ReceiverStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24F99BA021C3D307FB913D67 /* ReceiverStatusView.swift */; };
 		2B9372C3607FA8197B7873DB /* CarPlayTemplateBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0261285E3529148B5B9006B /* CarPlayTemplateBuilder.swift */; };
 		3E0248F0B2BB2E537738E3C5 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D1DF5452401B7171867001E /* CarPlaySceneDelegate.swift */; };
@@ -64,6 +65,7 @@
 		B14EAE3275BD73317AF51934 /* PhoneSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSceneDelegate.swift; sourceTree = "<group>"; };
 		B60FF26C454C96645770419A /* SOAPParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOAPParserTests.swift; sourceTree = "<group>"; };
 		B66609CD5D68A5EF10FFD0B0 /* MediaServerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaServerProtocol.swift; sourceTree = "<group>"; };
+		B7AF5EC67F95AC56598EBE84 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		BFB7459E7DDB5EDA806AF284 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C55C288C8B4FAACF79BACC9B /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
 		DBC0889A506949C3C7DB1444 /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
@@ -93,6 +95,7 @@
 				D2B18DCE78CD456E4D24B9EC /* iPhone */,
 				8F79028C938623BCFD909AB3 /* MediaCore */,
 				F3E85C6C25CC30CC19BBF61C /* Receiver */,
+				57FEE608805070A510065793 /* Resources */,
 				F09D70A8D91D4D9E44FD3378 /* Sources */,
 			);
 			path = Sources;
@@ -105,6 +108,14 @@
 				236199B7B2C8E019BBF2B2A4 /* VimuTests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		57FEE608805070A510065793 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				B7AF5EC67F95AC56598EBE84 /* LaunchScreen.storyboard */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 		58C405D72DD0DAAF5D26249D /* PersonalMedia */ = {
@@ -287,6 +298,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				BB3DC469740DA95175A796C6 /* Assets.xcassets in Resources */,
+				140316743254A66582C1B1C3 /* LaunchScreen.storyboard in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -374,6 +386,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -400,6 +413,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = Info.plist;
+				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

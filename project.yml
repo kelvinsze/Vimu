@@ -32,6 +32,7 @@ targets:
         SWIFT_VERSION: "5.0"
         INFOPLIST_FILE: Info.plist
         GENERATE_INFOPLIST_FILE: NO
+        INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: VFB889K3T3
 
