@@ -47,35 +47,35 @@ public struct MediaItem: Identifiable, Codable, Equatable, Sendable {
 }
 
 extension MediaItem {
-    /// Sample test streams for testing AVPlayer & CarPlay playback in Phase 1
+    /// Universally accessible test streams (domestic fast CDN + Apple Akamai CDN)
     public static let sampleStreams: [MediaItem] = [
         MediaItem(
-            title: "Apple HLS Test (BipBop 4x3)",
-            url: URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_4x3/bipbop_4x3_variant.m3u8")!,
-            sourceType: .testStream,
-            mimeType: "application/x-mpegURL"
-        ),
-        MediaItem(
-            title: "Apple HLS Test (BipBop 16x9)",
+            title: "Apple 官方 16:9 HLS 测试流 (高清晰·自适应)",
             url: URL(string: "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8")!,
             sourceType: .testStream,
             mimeType: "application/x-mpegURL"
         ),
         MediaItem(
-            title: "Big Buck Bunny (MP4 1080p)",
-            url: URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4")!,
+            title: "高清 MP4 测试短片 1 (国内高速 CDN 直链)",
+            url: URL(string: "https://v-cdn.zjol.com.cn/280443.mp4")!,
             sourceType: .testStream,
             mimeType: "video/mp4"
         ),
         MediaItem(
-            title: "Tears of Steel (MP4 1080p)",
-            url: URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4")!,
+            title: "高清 MP4 测试短片 2 (国内高速 CDN 直链)",
+            url: URL(string: "https://v-cdn.zjol.com.cn/276982.mp4")!,
             sourceType: .testStream,
             mimeType: "video/mp4"
         ),
         MediaItem(
-            title: "Elephants Dream (MP4 720p)",
-            url: URL(string: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4")!,
+            title: "大雄兔 Big Buck Bunny (W3C 标准 MP4 直链)",
+            url: URL(string: "https://www.w3schools.com/html/mov_bbb.mp4")!,
+            sourceType: .testStream,
+            mimeType: "video/mp4"
+        ),
+        MediaItem(
+            title: "Sintel 动画电影预告片 (W3C 标准 MP4 直链)",
+            url: URL(string: "https://media.w3.org/2010/05/sintel/trailer.mp4")!,
             sourceType: .testStream,
             mimeType: "video/mp4"
         )
