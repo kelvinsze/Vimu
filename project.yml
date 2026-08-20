@@ -1,0 +1,56 @@
+name: Vimu
+options:
+  bundleIdPrefix: com.kelvinsze
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+
+targets:
+  Vimu:
+    type: application
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Sources
+    info:
+      path: Info.plist
+    entitlements:
+      path: Vimu.entitlements
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kelvinsze.vimu
+        PRODUCT_NAME: Vimu
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: 1
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ENABLE_PREVIEWS: YES
+        SWIFT_VERSION: "5.0"
+        INFOPLIST_FILE: Info.plist
+        GENERATE_INFOPLIST_FILE: NO
+        CODE_SIGN_STYLE: Automatic
+
+  VimuTests:
+    type: bundle.unit-test
+    platform: iOS
+    deploymentTarget: "17.0"
+    sources:
+      - path: Tests
+    dependencies:
+      - target: Vimu
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.kelvinsze.vimu.tests
+        SWIFT_VERSION: "5.0"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Vimu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Vimu
+        BUNDLE_LOADER: $(TEST_HOST)
+
+schemes:
+  Vimu:
+    build:
+      targets:
+        Vimu: all
+        VimuTests: [test]
+    test:
+      targets:
+        - VimuTests
