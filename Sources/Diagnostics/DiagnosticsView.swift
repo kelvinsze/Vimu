@@ -7,7 +7,7 @@ public struct DiagnosticsView: View {
     @State private var interfaces: [NetworkInterfaceInfo] = []
     @State private var diagnosticLog: [String] = []
     @State private var isRunningTest = false
-    @State private var probeUrlInput = "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4"
+    @State private var probeUrlInput = "https://v-cdn.zjol.com.cn/280443.mp4"
     @State private var probeResult: String?
     @State private var isProbing = false
 
