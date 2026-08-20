@@ -12,6 +12,7 @@
 		13A36F6921F26DFAE6911AB7 /* SOAPParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748F18B451ED56B098E87EA6 /* SOAPParser.swift */; };
 		140316743254A66582C1B1C3 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = B7AF5EC67F95AC56598EBE84 /* LaunchScreen.storyboard */; };
 		28623ABB38ED6DC197B93D7F /* ReceiverStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 24F99BA021C3D307FB913D67 /* ReceiverStatusView.swift */; };
+		2A88C825B0C18A3840E76325 /* MediaServerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1305E7FDDF102EE7FEF33F6 /* MediaServerManager.swift */; };
 		2B9372C3607FA8197B7873DB /* CarPlayTemplateBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = F0261285E3529148B5B9006B /* CarPlayTemplateBuilder.swift */; };
 		3E0248F0B2BB2E537738E3C5 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D1DF5452401B7171867001E /* CarPlaySceneDelegate.swift */; };
 		3E211C96E83BC258A00C1F27 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFB7459E7DDB5EDA806AF284 /* HomeView.swift */; };
@@ -22,7 +23,9 @@
 		5D0C5EEF22D5E8EF9EC35610 /* PlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 660729E7D1EB2358D4E27F8D /* PlayerService.swift */; };
 		6652226C7906FFFD6772E2B3 /* UPnPDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2F4C4E0CC74BBEFB14FFDE6 /* UPnPDevice.swift */; };
 		679E454F05B4296F01A44085 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8C7E2C88733EEED0AA46DBFC /* PlaybackSession.swift */; };
+		68BDC3F77DA1B8E3A24923A5 /* ServerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9DB84CA0B0516D2134A02B48 /* ServerDetailView.swift */; };
 		7AB91B99A42945B1F9729709 /* URLSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3AFF6727ECC3BD08E43CAF02 /* URLSource.swift */; };
+		89DA8946BD4EFEACF2398772 /* EmbyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3A120596E64F5234CA07BEC1 /* EmbyClient.swift */; };
 		8B1AC47B25A6B93AE413CA37 /* PhoneSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B14EAE3275BD73317AF51934 /* PhoneSceneDelegate.swift */; };
 		8B9514A9369E43CCC0F71B4B /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C55C288C8B4FAACF79BACC9B /* PlayerView.swift */; };
 		966038DC629D84579669E60F /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0F165796F8316D1BF9B3FB8A /* MainTabView.swift */; };
@@ -30,8 +33,10 @@
 		BA6D83B463B6A8559A194849 /* MediaServerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B66609CD5D68A5EF10FFD0B0 /* MediaServerProtocol.swift */; };
 		BB3DC469740DA95175A796C6 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = F2D6E236EAC2DB5741D671FE /* Assets.xcassets */; };
 		C7F10F97F35FFCB6CE8F18FD /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E827B3CDC4CF61EAA08C52F9 /* DiagnosticsView.swift */; };
+		ECBB25DB69C5F10016CBC5EB /* ServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CAF296D9591D25234EF14951 /* ServersView.swift */; };
 		EDDDB39DB8C3B4B7CE4FDA08 /* CarPlayVideoPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = 374C5D4CBA0BA8A717E971CD /* CarPlayVideoPresentation.swift */; };
 		EEB1CFEA6DBE9A43E472D6D9 /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DBC0889A506949C3C7DB1444 /* HTTPServer.swift */; };
+		F14B058ED228E4B86A2D5BD9 /* JellyfinClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7851E143ADCDB91A4721717B /* JellyfinClient.swift */; };
 		F84CABD3AE2BBDDC2CDC3F87 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7FA4A3E3175129B6E19165B9 /* SettingsView.swift */; };
 /* End PBXBuildFile section */
 
@@ -53,6 +58,7 @@
 		236199B7B2C8E019BBF2B2A4 /* VimuTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = VimuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		24F99BA021C3D307FB913D67 /* ReceiverStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverStatusView.swift; sourceTree = "<group>"; };
 		374C5D4CBA0BA8A717E971CD /* CarPlayVideoPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayVideoPresentation.swift; sourceTree = "<group>"; };
+		3A120596E64F5234CA07BEC1 /* EmbyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbyClient.swift; sourceTree = "<group>"; };
 		3AFF6727ECC3BD08E43CAF02 /* URLSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSource.swift; sourceTree = "<group>"; };
 		5AD2A11F27BF05B5FDFFF2AB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5EA388A3E17F8176FEDBC0DE /* Vimu.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Vimu.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -60,19 +66,23 @@
 		6D1DF5452401B7171867001E /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
 		748F18B451ED56B098E87EA6 /* SOAPParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOAPParser.swift; sourceTree = "<group>"; };
 		76BBE039818E3F67996DF770 /* AVTransportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVTransportService.swift; sourceTree = "<group>"; };
+		7851E143ADCDB91A4721717B /* JellyfinClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JellyfinClient.swift; sourceTree = "<group>"; };
 		7A7E111820E5FDDEC778706A /* DLNASource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DLNASource.swift; sourceTree = "<group>"; };
 		7FA4A3E3175129B6E19165B9 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		8C7E2C88733EEED0AA46DBFC /* PlaybackSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSession.swift; sourceTree = "<group>"; };
+		9DB84CA0B0516D2134A02B48 /* ServerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDetailView.swift; sourceTree = "<group>"; };
 		B14EAE3275BD73317AF51934 /* PhoneSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSceneDelegate.swift; sourceTree = "<group>"; };
 		B60FF26C454C96645770419A /* SOAPParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOAPParserTests.swift; sourceTree = "<group>"; };
 		B66609CD5D68A5EF10FFD0B0 /* MediaServerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaServerProtocol.swift; sourceTree = "<group>"; };
 		B7AF5EC67F95AC56598EBE84 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
 		BFB7459E7DDB5EDA806AF284 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
 		C55C288C8B4FAACF79BACC9B /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		CAF296D9591D25234EF14951 /* ServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServersView.swift; sourceTree = "<group>"; };
 		DBC0889A506949C3C7DB1444 /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
 		E827B3CDC4CF61EAA08C52F9 /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
 		EDFAD59F56C09B5381E15979 /* PlaybackHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackHistory.swift; sourceTree = "<group>"; };
 		F0261285E3529148B5B9006B /* CarPlayTemplateBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayTemplateBuilder.swift; sourceTree = "<group>"; };
+		F1305E7FDDF102EE7FEF33F6 /* MediaServerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaServerManager.swift; sourceTree = "<group>"; };
 		F2D6E236EAC2DB5741D671FE /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		F2F4C4E0CC74BBEFB14FFDE6 /* UPnPDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UPnPDevice.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -123,6 +133,9 @@
 		58C405D72DD0DAAF5D26249D /* PersonalMedia */ = {
 			isa = PBXGroup;
 			children = (
+				3A120596E64F5234CA07BEC1 /* EmbyClient.swift */,
+				7851E143ADCDB91A4721717B /* JellyfinClient.swift */,
+				F1305E7FDDF102EE7FEF33F6 /* MediaServerManager.swift */,
 				B66609CD5D68A5EF10FFD0B0 /* MediaServerProtocol.swift */,
 			);
 			path = PersonalMedia;
@@ -135,6 +148,8 @@
 				0F165796F8316D1BF9B3FB8A /* MainTabView.swift */,
 				C55C288C8B4FAACF79BACC9B /* PlayerView.swift */,
 				24F99BA021C3D307FB913D67 /* ReceiverStatusView.swift */,
+				9DB84CA0B0516D2134A02B48 /* ServerDetailView.swift */,
+				CAF296D9591D25234EF14951 /* ServersView.swift */,
 				7FA4A3E3175129B6E19165B9 /* SettingsView.swift */,
 			);
 			path = Views;
@@ -325,10 +340,13 @@
 				EDDDB39DB8C3B4B7CE4FDA08 /* CarPlayVideoPresentation.swift in Sources */,
 				116528DEB249B6A1E8AAF64D /* DLNASource.swift in Sources */,
 				C7F10F97F35FFCB6CE8F18FD /* DiagnosticsView.swift in Sources */,
+				89DA8946BD4EFEACF2398772 /* EmbyClient.swift in Sources */,
 				EEB1CFEA6DBE9A43E472D6D9 /* HTTPServer.swift in Sources */,
 				3E211C96E83BC258A00C1F27 /* HomeView.swift in Sources */,
+				F14B058ED228E4B86A2D5BD9 /* JellyfinClient.swift in Sources */,
 				966038DC629D84579669E60F /* MainTabView.swift in Sources */,
 				51C32BF436EFB7F6A982FBA9 /* MediaItem.swift in Sources */,
+				2A88C825B0C18A3840E76325 /* MediaServerManager.swift in Sources */,
 				BA6D83B463B6A8559A194849 /* MediaServerProtocol.swift in Sources */,
 				8B1AC47B25A6B93AE413CA37 /* PhoneSceneDelegate.swift in Sources */,
 				54CD3A709E2AD68730F1ECCA /* PlaybackHistory.swift in Sources */,
@@ -338,6 +356,8 @@
 				28623ABB38ED6DC197B93D7F /* ReceiverStatusView.swift in Sources */,
 				13A36F6921F26DFAE6911AB7 /* SOAPParser.swift in Sources */,
 				050CD3908ED621E3E684DCFA /* SSDPService.swift in Sources */,
+				68BDC3F77DA1B8E3A24923A5 /* ServerDetailView.swift in Sources */,
+				ECBB25DB69C5F10016CBC5EB /* ServersView.swift in Sources */,
 				F84CABD3AE2BBDDC2CDC3F87 /* SettingsView.swift in Sources */,
 				6652226C7906FFFD6772E2B3 /* UPnPDevice.swift in Sources */,
 				7AB91B99A42945B1F9729709 /* URLSource.swift in Sources */,

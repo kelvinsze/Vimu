@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Main TabView uniting Home, Diagnostics, and Settings.
+/// Main TabView uniting Player, Media Servers, Diagnostics, and Settings.
 public struct MainTabView: View {
     public init() {}
 
@@ -9,6 +9,11 @@ public struct MainTabView: View {
             HomeView()
                 .tabItem {
                     Label("Player", systemImage: "play.tv.fill")
+                }
+
+            ServersView()
+                .tabItem {
+                    Label("Servers", systemImage: "server.rack")
                 }
 
             DiagnosticsView()
@@ -21,5 +26,6 @@ public struct MainTabView: View {
                     Label("Settings", systemImage: "gearshape.fill")
                 }
         }
+        .tint(.cyan)
     }
 }
