@@ -14,11 +14,15 @@ public final class PlayerService: ObservableObject {
 
     @Published public private(set) var session: PlaybackSession = PlaybackSession()
     @Published public private(set) var player: AVPlayer
+    @Published public var videoGravity: AVLayerVideoGravity = .resizeAspect
+    @Published public var selectedSpeed: Float = 1.0
 
     private var timeObserverToken: Any?
     private var itemStatusObserver: NSKeyValueObservation?
     private var itemLoadedRangesObserver: NSKeyValueObservation?
     private var playerTimeControlObserver: NSKeyValueObservation?
+    private var itemBufferEmptyObserver: NSKeyValueObservation?
+    private var itemBufferKeepUpObserver: NSKeyValueObservation?
     private var cancellables = Set<AnyCancellable>()
 
     public init() {
@@ -55,6 +59,8 @@ public final class PlayerService: ObservableObject {
         // Invalidate previous item observations
         itemStatusObserver?.invalidate()
         itemLoadedRangesObserver?.invalidate()
+        itemBufferEmptyObserver?.invalidate()
+        itemBufferKeepUpObserver?.invalidate()
 
         // Create asset and player item
         let asset: AVURLAsset
@@ -89,8 +95,28 @@ public final class PlayerService: ObservableObject {
             }
         }
 
+        // Observe buffering state for stall recovery
+        itemBufferEmptyObserver = playerItem.observe(\.isPlaybackBufferEmpty, options: [.new]) { [weak self] item, _ in
+            Task { @MainActor [weak self] in
+                if item.isPlaybackBufferEmpty {
+                    logger.info("Playback buffer empty, waiting for buffer...")
+                    self?.session.status = .loading
+                }
+            }
+        }
+
+        itemBufferKeepUpObserver = playerItem.observe(\.isPlaybackLikelyToKeepUp, options: [.new]) { [weak self] item, _ in
+            Task { @MainActor [weak self] in
+                if item.isPlaybackLikelyToKeepUp && self?.session.status == .loading {
+                    logger.info("Buffer recovered, resuming playback.")
+                    self?.play()
+                }
+            }
+        }
+
         // Replace current item and play
         player.replaceCurrentItem(with: playerItem)
+        player.rate = selectedSpeed
         player.play()
 
         // Record into history
@@ -100,6 +126,7 @@ public final class PlayerService: ObservableObject {
 
     public func play() {
         guard session.currentItem != nil else { return }
+        player.rate = selectedSpeed
         player.play()
         session.status = .playing
         updateNowPlayingInfo()
@@ -149,9 +176,18 @@ public final class PlayerService: ObservableObject {
     }
 
     public func setRate(_ rate: Float) {
+        self.selectedSpeed = rate
         session.playbackRate = rate
         if session.status == .playing {
             player.rate = rate
+        }
+    }
+
+    public func toggleVideoGravity() {
+        if videoGravity == .resizeAspect {
+            videoGravity = .resizeAspectFill
+        } else {
+            videoGravity = .resizeAspect
         }
     }
 
@@ -353,7 +389,7 @@ public final class PlayerService: ObservableObject {
 
         info[MPNowPlayingInfoPropertyElapsedPlaybackTime] = session.currentTime
         info[MPMediaItemPropertyPlaybackDuration] = session.duration
-        info[MPNowPlayingInfoPropertyPlaybackRate] = session.status == .playing ? 1.0 : 0.0
+        info[MPNowPlayingInfoPropertyPlaybackRate] = session.status == .playing ? Double(selectedSpeed) : 0.0
 
         MPNowPlayingInfoCenter.default().nowPlayingInfo = info
     }

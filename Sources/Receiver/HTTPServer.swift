@@ -4,7 +4,7 @@ import OSLog
 
 private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "HTTPServer")
 
-/// Embedded lightweight HTTP server using Network.framework for UPnP Device Description & SOAP endpoints.
+/// Embedded lightweight HTTP & REST / Web Remote server using Network.framework.
 public final class HTTPServer: @unchecked Sendable {
     public static let shared = HTTPServer()
 
@@ -89,14 +89,13 @@ public final class HTTPServer: @unchecked Sendable {
                     return
                 }
 
-                // Parse content length
                 let headers = self.parseHeaders(headerString)
                 let contentLength = Int(headers["content-length"] ?? "0") ?? 0
 
                 if bodyData.count >= contentLength {
                     self.processRequest(connection: connection, headerString: headerString, headers: headers, bodyData: bodyData)
                 } else {
-                    // Need more body data
+                    // Read more body data
                     self.readHTTPRequest(connection: connection, accumulatedData: currentData)
                 }
             } else if isComplete || error != nil {
@@ -133,6 +132,7 @@ public final class HTTPServer: @unchecked Sendable {
         logger.info("HTTP Request: \(method) \(path)")
 
         switch (method, path) {
+        // MARK: - UPnP Device Description & SCPD
         case ("GET", "/description.xml"):
             let xml = UPnPDevice.shared.deviceDescriptionXML(hostIP: localIPAddress)
             sendResponse(connection: connection, statusCode: 200, contentType: "text/xml; charset=\"utf-8\"", body: xml)
@@ -149,6 +149,7 @@ public final class HTTPServer: @unchecked Sendable {
             let xml = UPnPDevice.shared.connectionManagerSCPD()
             sendResponse(connection: connection, statusCode: 200, contentType: "text/xml; charset=\"utf-8\"", body: xml)
 
+        // MARK: - UPnP Control (SOAP)
         case ("POST", let p) where p.hasPrefix("/upnp/control/"):
             let soapActionHeader = headers["soapaction"]
             if let action = SOAPParser.parseAction(bodyData: bodyData, soapActionHeader: soapActionHeader) {
@@ -161,9 +162,91 @@ public final class HTTPServer: @unchecked Sendable {
                 sendResponse(connection: connection, statusCode: 500, contentType: "text/xml; charset=\"utf-8\"", body: fault)
             }
 
-        case ("GET", "/status"):
-            let status = "{\"status\":\"ok\",\"ip\":\"\(localIPAddress)\",\"port\":\(port)}"
-            sendResponse(connection: connection, statusCode: 200, contentType: "application/json", body: status)
+        // MARK: - UPnP GENA Eventing (SUBSCRIBE / UNSUBSCRIBE)
+        case ("SUBSCRIBE", let p) where p.hasPrefix("/upnp/event/"):
+            let sid = "uuid:vimu-sub-" + UUID().uuidString.lowercased()
+            let headers = [
+                "SID": sid,
+                "TIMEOUT": "Second-1800",
+                "SERVER": "iOS/17 UPnP/1.0 Vimu/0.1"
+            ]
+            sendResponseWithCustomHeaders(connection: connection, statusCode: 200, headers: headers, body: "")
+
+        case ("UNSUBSCRIBE", let p) where p.hasPrefix("/upnp/event/"):
+            sendResponse(connection: connection, statusCode: 200, contentType: "text/plain", body: "OK")
+
+        // MARK: - REST API for Local Web Remote & Diagnostics
+        case ("GET", "/api/status"):
+            Task {
+                let session = await MainActor.run { PlayerService.shared.session }
+                let responseDict: [String: Any] = [
+                    "status": session.status.rawValue,
+                    "title": session.currentItem?.title ?? "",
+                    "url": session.currentItem?.url.absoluteString ?? "",
+                    "currentTime": session.currentTime,
+                    "duration": session.duration,
+                    "volume": session.volume,
+                    "isMuted": session.isMuted,
+                    "ip": self.localIPAddress,
+                    "port": self.port,
+                    "friendlyName": UPnPDevice.shared.friendlyName
+                ]
+                if let jsonData = try? JSONSerialization.data(withJSONObject: responseDict, options: [.prettyPrinted]),
+                   let jsonString = String(data: jsonData, encoding: .utf8) {
+                    self.sendResponse(connection: connection, statusCode: 200, contentType: "application/json", body: jsonString)
+                } else {
+                    self.sendResponse(connection: connection, statusCode: 500, contentType: "application/json", body: "{\"error\":\"json_encoding_failed\"}")
+                }
+            }
+
+        case ("POST", "/api/play"):
+            if let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+               let urlStr = json["url"] as? String,
+               let url = URL(string: urlStr) {
+                let title = (json["title"] as? String) ?? url.lastPathComponent
+                let item = MediaItem(
+                    title: title.isEmpty ? "Web Stream" : title,
+                    url: url,
+                    sourceType: .directUrl,
+                    originator: "Web Remote"
+                )
+                Task { @MainActor in
+                    PlayerService.shared.loadAndPlay(item: item)
+                }
+                sendResponse(connection: connection, statusCode: 200, contentType: "application/json", body: "{\"status\":\"ok\"}")
+            } else {
+                sendResponse(connection: connection, statusCode: 400, contentType: "application/json", body: "{\"error\":\"invalid_payload\"}")
+            }
+
+        case ("POST", "/api/control"):
+            if let json = try? JSONSerialization.jsonObject(with: bodyData) as? [String: Any],
+               let action = json["action"] as? String {
+                Task { @MainActor in
+                    switch action {
+                    case "play": PlayerService.shared.play()
+                    case "pause": PlayerService.shared.pause()
+                    case "stop": PlayerService.shared.stop()
+                    case "toggle": PlayerService.shared.togglePlayPause()
+                    case "seek":
+                        if let time = json["value"] as? Double {
+                            PlayerService.shared.seek(to: time)
+                        }
+                    case "volume":
+                        if let vol = json["value"] as? Float {
+                            PlayerService.shared.setVolume(vol)
+                        }
+                    default: break
+                    }
+                }
+                sendResponse(connection: connection, statusCode: 200, contentType: "application/json", body: "{\"status\":\"ok\"}")
+            } else {
+                sendResponse(connection: connection, statusCode: 400, contentType: "application/json", body: "{\"error\":\"invalid_payload\"}")
+            }
+
+        // MARK: - Web Remote Controller HTML UI
+        case ("GET", "/"), ("GET", "/web"):
+            let html = WebRemoteTemplate.render(ip: localIPAddress, port: port, friendlyName: UPnPDevice.shared.friendlyName)
+            sendResponse(connection: connection, statusCode: 200, contentType: "text/html; charset=utf-8", body: html)
 
         default:
             sendResponse(connection: connection, statusCode: 404, contentType: "text/plain", body: "Not Found")
@@ -190,6 +273,200 @@ public final class HTTPServer: @unchecked Sendable {
             connection.cancel()
         })
     }
+
+    private func sendResponseWithCustomHeaders(connection: NWConnection, statusCode: Int, headers: [String: String], body: String) {
+        let statusText = "OK"
+        let bodyData = Data(body.utf8)
+        var headerString = "HTTP/1.1 \(statusCode) \(statusText)\r\n"
+        for (key, val) in headers {
+            headerString += "\(key): \(val)\r\n"
+        }
+        headerString += "Content-Length: \(bodyData.count)\r\nConnection: close\r\n\r\n"
+
+        var fullData = Data(headerString.utf8)
+        fullData.append(bodyData)
+
+        connection.send(content: fullData, completion: .contentProcessed { _ in
+            connection.cancel()
+        })
+    }
+}
+
+// MARK: - Embedded Web Remote HTML Template
+
+enum WebRemoteTemplate {
+    static func render(ip: String, port: UInt16, friendlyName: String) -> String {
+        return """
+        <!DOCTYPE html>
+        <html lang="zh-CN">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+          <title>Vimu 网页遥控器</title>
+          <style>
+            :root {
+              --bg: #0b0f19;
+              --card: #151d30;
+              --accent: #38bdf8;
+              --text: #f8fafc;
+              --muted: #94a3b8;
+            }
+            * { box-sizing: border-box; margin: 0; padding: 0; }
+            body {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+              background-color: var(--bg);
+              color: var(--text);
+              padding: 1.25rem;
+              display: flex;
+              justify-content: center;
+            }
+            .app-container {
+              width: 100%;
+              max-width: 480px;
+            }
+            header {
+              text-align: center;
+              margin-bottom: 1.5rem;
+            }
+            h1 { font-size: 1.5rem; color: var(--accent); }
+            .badge {
+              font-size: 0.8rem;
+              background: rgba(56,189,248,0.15);
+              color: var(--accent);
+              padding: 0.2rem 0.6rem;
+              border-radius: 999px;
+              margin-top: 0.25rem;
+              display: inline-block;
+            }
+            .card {
+              background: var(--card);
+              border-radius: 1rem;
+              padding: 1.25rem;
+              margin-bottom: 1.25rem;
+              border: 1px solid rgba(255,255,255,0.06);
+            }
+            .card-title {
+              font-size: 0.95rem;
+              font-weight: 600;
+              color: var(--muted);
+              margin-bottom: 0.75rem;
+            }
+            input[type="text"] {
+              width: 100%;
+              padding: 0.75rem 1rem;
+              background: rgba(0,0,0,0.3);
+              border: 1px solid rgba(255,255,255,0.1);
+              border-radius: 0.5rem;
+              color: #fff;
+              font-size: 0.9rem;
+              margin-bottom: 0.75rem;
+            }
+            button.btn-primary {
+              width: 100%;
+              background: var(--accent);
+              color: #0b0f19;
+              font-weight: 600;
+              border: none;
+              padding: 0.75rem;
+              border-radius: 0.5rem;
+              cursor: pointer;
+              font-size: 0.95rem;
+            }
+            .controls-row {
+              display: flex;
+              gap: 0.75rem;
+              margin-top: 0.75rem;
+            }
+            .btn-ctrl {
+              flex: 1;
+              background: rgba(255,255,255,0.08);
+              border: 1px solid rgba(255,255,255,0.1);
+              color: #fff;
+              padding: 0.75rem;
+              border-radius: 0.5rem;
+              font-weight: 600;
+              cursor: pointer;
+            }
+            .btn-ctrl:active, button.btn-primary:active { opacity: 0.7; }
+            .status-text {
+              font-size: 0.9rem;
+              margin-bottom: 0.4rem;
+            }
+            .time-bar {
+              font-family: monospace;
+              font-size: 0.85rem;
+              color: var(--muted);
+            }
+          </style>
+        </head>
+        <body>
+          <div class="app-container">
+            <header>
+              <h1>Vimu 遥控与投送</h1>
+              <div class="badge">\(friendlyName)</div>
+            </header>
+
+            <div class="card">
+              <div class="card-title">当前播放</div>
+              <div class="status-text" id="mediaTitle">加载中...</div>
+              <div class="time-bar" id="mediaTime">00:00:00 / 00:00:00</div>
+              <div class="controls-row">
+                <button class="btn-ctrl" onclick="sendControl('toggle')">⏯ 播放/暂停</button>
+                <button class="btn-ctrl" onclick="sendControl('stop')">⏹ 停止</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-title">推送视频 URL 到 CarPlay / Vimu</div>
+              <input type="text" id="videoUrlInput" placeholder="输入 HTTP/HTTPS 或 HLS m3u8 链接">
+              <button class="btn-primary" onclick="pushVideo()">🚀 立即投送播放</button>
+            </div>
+          </div>
+
+          <script>
+            async function fetchStatus() {
+              try {
+                const res = await fetch('/api/status');
+                const data = await res.json();
+                document.getElementById('mediaTitle').innerText = data.title || (data.status === 'PLAYING' ? '正在播放视频' : '无媒体');
+                const formatTime = (s) => {
+                  if (!s || isNaN(s)) return '00:00:00';
+                  const sec = Math.floor(s);
+                  return String(Math.floor(sec/3600)).padStart(2,'0') + ':' +
+                         String(Math.floor((sec%3600)/60)).padStart(2,'0') + ':' +
+                         String(sec%60).padStart(2,'0');
+                };
+                document.getElementById('mediaTime').innerText = formatTime(data.currentTime) + ' / ' + formatTime(data.duration) + ' (' + data.status + ')';
+              } catch(e) {}
+            }
+            setInterval(fetchStatus, 1500);
+            fetchStatus();
+
+            async function sendControl(action, value) {
+              await fetch('/api/control', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, value })
+              });
+              fetchStatus();
+            }
+
+            async function pushVideo() {
+              const url = document.getElementById('videoUrlInput').value.trim();
+              if (!url) return alert('请输入视频链接');
+              await fetch('/api/play', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+              });
+              document.getElementById('videoUrlInput').value = '';
+              fetchStatus();
+            }
+          </script>
+        </body>
+        </html>
+        """
+    }
 }
 
 // MARK: - Network IP Helper
@@ -208,7 +485,6 @@ public enum NetworkHelper {
 
             if addrFamily == UInt8(AF_INET) {
                 let name = String(cString: interface.ifa_name)
-                // en0 is Wi-Fi on iOS devices
                 if name == "en0" || name == "pdp_ip0" || name == "lo0" {
                     var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
                     getnameinfo(
@@ -222,7 +498,7 @@ public enum NetworkHelper {
                     )
                     let ip = String(cString: hostname)
                     if name == "en0" {
-                        return ip // Wi-Fi preferred
+                        return ip
                     } else if address == nil {
                         address = ip
                     }
@@ -232,3 +508,4 @@ public enum NetworkHelper {
         return address
     }
 }
+

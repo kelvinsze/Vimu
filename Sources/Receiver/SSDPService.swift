@@ -1,6 +1,7 @@
 import Foundation
 import Network
 import OSLog
+import Combine
 
 private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "SSDPService")
 
@@ -16,6 +17,9 @@ public final class SSDPService: @unchecked Sendable {
     private var connectionGroup: NWConnectionGroup?
     private var isRunning = false
     private var advertiseTimer: DispatchSourceTimer?
+
+    // Recent discovery logs for Diagnostics
+    public var onDiscoveryEvent: ((String) -> Void)?
 
     private init() {}
 
@@ -94,7 +98,10 @@ public final class SSDPService: @unchecked Sendable {
             return
         }
 
-        logger.info("Received M-SEARCH for ST: \(st)")
+        let eventLog = "M-SEARCH query for ST: \(st)"
+        logger.info("\(eventLog)")
+        onDiscoveryEvent?(eventLog)
+
         respondToMSearch(st: st, message: message)
     }
 
@@ -140,7 +147,7 @@ public final class SSDPService: @unchecked Sendable {
     private func startAdvertisingTimer() {
         advertiseTimer?.cancel()
         let timer = DispatchSource.makeTimerSource(queue: queue)
-        timer.schedule(deadline: .now() + 10, repeating: 60)
+        timer.schedule(deadline: .now() + 5, repeating: 30)
         timer.setEventHandler { [weak self] in
             self?.sendSSDPAlive()
         }
@@ -148,11 +155,11 @@ public final class SSDPService: @unchecked Sendable {
         self.advertiseTimer = timer
     }
 
-    private func sendSSDPAlive() {
+    public func sendSSDPAlive() {
         sendNotification(nts: "ssdp:alive")
     }
 
-    private func sendSSDPByeBye() {
+    public func sendSSDPByeBye() {
         sendNotification(nts: "ssdp:byebye")
     }
 
