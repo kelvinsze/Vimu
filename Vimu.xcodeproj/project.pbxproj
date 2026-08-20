@@ -54,6 +54,7 @@
 		24F99BA021C3D307FB913D67 /* ReceiverStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverStatusView.swift; sourceTree = "<group>"; };
 		374C5D4CBA0BA8A717E971CD /* CarPlayVideoPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayVideoPresentation.swift; sourceTree = "<group>"; };
 		3AFF6727ECC3BD08E43CAF02 /* URLSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSource.swift; sourceTree = "<group>"; };
+		5AD2A11F27BF05B5FDFFF2AB /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		5EA388A3E17F8176FEDBC0DE /* Vimu.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Vimu.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		660729E7D1EB2358D4E27F8D /* PlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerService.swift; sourceTree = "<group>"; };
 		6D1DF5452401B7171867001E /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
@@ -89,6 +90,7 @@
 			isa = PBXGroup;
 			children = (
 				F2D6E236EAC2DB5741D671FE /* Assets.xcassets */,
+				5AD2A11F27BF05B5FDFFF2AB /* Info.plist */,
 				89DCDB9E65E434B8856D1706 /* Application */,
 				D6DF3286E46562CB839355D2 /* CarPlay */,
 				8B41F54A0C21BCF3F474D71F /* Diagnostics */,
@@ -385,8 +387,7 @@
 				DEVELOPMENT_TEAM = VFB889K3T3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_FILE = Sources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -412,8 +413,7 @@
 				DEVELOPMENT_TEAM = VFB889K3T3;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
-				INFOPLIST_FILE = Info.plist;
-				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
+				INFOPLIST_FILE = Sources/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",

@@ -17,8 +17,6 @@ targets:
     deploymentTarget: "17.0"
     sources:
       - path: Sources
-    info:
-      path: Info.plist
     entitlements:
       path: Vimu.entitlements
     settings:
@@ -30,9 +28,8 @@ targets:
         TARGETED_DEVICE_FAMILY: "1,2"
         ENABLE_PREVIEWS: YES
         SWIFT_VERSION: "5.0"
-        INFOPLIST_FILE: Info.plist
+        INFOPLIST_FILE: Sources/Info.plist
         GENERATE_INFOPLIST_FILE: NO
-        INFOPLIST_KEY_UILaunchStoryboardName: LaunchScreen
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: VFB889K3T3
 
