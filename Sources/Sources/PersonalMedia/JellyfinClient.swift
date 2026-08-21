@@ -15,6 +15,8 @@ public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
         return accessToken != nil && !(accessToken?.isEmpty ?? true)
     }
 
+    public var playbackRequestHeaders: [String: String]? { authorizationHeaders() }
+
     public init(
         id: UUID = UUID(),
         serverName: String,
@@ -90,63 +92,75 @@ public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
 
     public func fetchItems(libraryId: String, startIndex: Int = 0, limit: Int = 50) async throws -> [MediaItem] {
         guard let uid = userId else { throw MediaServerError.notAuthenticated }
-        var components = URLComponents(url: serverBaseURL.appendingPathComponent("Users/\(uid)/Items"), resolvingAgainstBaseURL: false)
-        components?.queryItems = [
+        return try await fetchMappedItems(userID: uid, queryItems: [
             URLQueryItem(name: "ParentId", value: libraryId),
             URLQueryItem(name: "StartIndex", value: "\(startIndex)"),
             URLQueryItem(name: "Limit", value: "\(limit)"),
             URLQueryItem(name: "Recursive", value: "true"),
             URLQueryItem(name: "IncludeItemTypes", value: "Movie,Episode,Video"),
             URLQueryItem(name: "Fields", value: "MediaSources,Overview,Path,MediaStreams")
-        ]
-
-        guard let url = components?.url else { throw MediaServerError.invalidURL }
-        let request = makeAuthorizedRequest(url: url)
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw MediaServerError.requestFailed(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500)
-        }
-
-        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let items = json["Items"] as? [[String: Any]] else {
-            return []
-        }
-
-        return items.compactMap { dict -> MediaItem? in
-            guard let id = dict["Id"] as? String, let name = dict["Name"] as? String else { return nil }
-            let durationTicks = (dict["RunTimeTicks"] as? Double) ?? 0
-            let durationSeconds = durationTicks / 10_000_000.0 // Jellyfin ticks to seconds
-
-            // Direct play stream URL
-            let streamURL = self.serverBaseURL.appendingPathComponent("Videos/\(id)/stream.mp4")
-
-            var posterURL: URL?
-            if let imageTags = dict["ImageTags"] as? [String: Any], imageTags["Primary"] != nil {
-                posterURL = self.serverBaseURL.appendingPathComponent("Items/\(id)/Images/Primary")
-            }
-
-            return MediaItem(
-                title: name,
-                url: streamURL,
-                sourceType: .personalMedia,
-                mimeType: "video/mp4",
-                duration: durationSeconds > 0 ? durationSeconds : nil,
-                posterUrl: posterURL,
-                headers: self.authorizationHeaders(),
-                originator: self.serverName
-            )
-        }
+        ])
     }
 
     public func fetchPlaybackStreamURL(itemId: String) async throws -> URL {
-        // Direct stream or HLS endpoint
-        let url = serverBaseURL.appendingPathComponent("Videos/\(itemId)/stream.mp4")
-        return url
+        (try await fetchPlaybackInfo(itemId: itemId)).url
     }
 
-    public func reportPlaybackProgress(itemId: String, position: TimeInterval, isPaused: Bool) async throws {
-        let endpoint = isPaused ? "Sessions/Playing/Progress" : "Sessions/Playing/Progress"
+    public func search(query: String, limit: Int = 25) async throws -> [MediaItem] {
+        guard let uid = userId else { throw MediaServerError.notAuthenticated }
+        return try await fetchMappedItems(userID: uid, queryItems: [URLQueryItem(name: "SearchTerm", value: query), URLQueryItem(name: "Limit", value: "\(limit)"), URLQueryItem(name: "Recursive", value: "true"), URLQueryItem(name: "IncludeItemTypes", value: "Movie,Episode,Video"), URLQueryItem(name: "Fields", value: "MediaSources,Overview,Path,MediaStreams")])
+    }
+
+    public func fetchContinueWatching(limit: Int = 25) async throws -> [MediaItem] {
+        guard let uid = userId else { throw MediaServerError.notAuthenticated }
+        return try await fetchMappedItems(userID: uid, queryItems: [URLQueryItem(name: "Limit", value: "\(limit)"), URLQueryItem(name: "Recursive", value: "true"), URLQueryItem(name: "Filters", value: "IsResumable"), URLQueryItem(name: "SortBy", value: "DatePlayed"), URLQueryItem(name: "SortOrder", value: "Descending"), URLQueryItem(name: "IncludeItemTypes", value: "Movie,Episode,Video"), URLQueryItem(name: "Fields", value: "MediaSources,Overview,Path,MediaStreams")])
+    }
+
+    private func fetchMappedItems(userID: String, queryItems: [URLQueryItem]) async throws -> [MediaItem] {
+        var components = URLComponents(url: serverBaseURL.appendingPathComponent("Users/\(userID)/Items"), resolvingAgainstBaseURL: false)
+        components?.queryItems = queryItems
+        guard let url = components?.url else { throw MediaServerError.invalidURL }
+        let (data, response) = try await URLSession.shared.data(for: makeAuthorizedRequest(url: url))
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw MediaServerError.requestFailed(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500)
+        }
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let items = json["Items"] as? [[String: Any]] else { return [] }
+        return items.compactMap { makeMediaItem(from: $0) }
+    }
+
+    private func makeMediaItem(from dict: [String: Any]) -> MediaItem? {
+        guard let id = dict["Id"] as? String, let name = dict["Name"] as? String else { return nil }
+        let duration = ((dict["RunTimeTicks"] as? Double) ?? 0) / 10_000_000
+        let playback = MediaPlaybackInfoSelector.select(itemId: id, baseURL: serverBaseURL, payload: dict, streamPath: "Videos/\(id)/stream")
+        return MediaItem(title: name, url: playback?.url ?? serverBaseURL.appendingPathComponent("Videos/\(id)/stream.mp4"), sourceType: .personalMedia, mimeType: "video/mp4", duration: duration > 0 ? duration : nil, headers: authorizationHeaders(), originator: serverName, serverID: serverId, serverItemID: id, playSessionID: playback?.playSessionId, mediaSourceID: playback?.mediaSourceId, resumePosition: playback?.resumePosition ?? (((dict["UserData"] as? [String: Any])?["PlaybackPositionTicks"] as? Double ?? 0) / 10_000_000))
+    }
+
+    public func fetchPlaybackInfo(itemId: String) async throws -> MediaPlaybackInfo {
+        guard let uid = userId else { throw MediaServerError.notAuthenticated }
+        var components = URLComponents(url: serverBaseURL.appendingPathComponent("Items/\(itemId)/PlaybackInfo"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [URLQueryItem(name: "UserId", value: uid)]
+        guard let url = components?.url else { throw MediaServerError.invalidURL }
+        var request = makeAuthorizedRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: [
+            "EnableDirectPlay": true,
+            "EnableDirectStream": true,
+            "EnableTranscoding": true,
+            "IsPlayback": true
+        ])
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
+              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let info = MediaPlaybackInfoSelector.select(itemId: itemId, baseURL: serverBaseURL, payload: json, streamPath: "Videos/\(itemId)/stream") else {
+            throw MediaServerError.invalidResponse
+        }
+        return info
+    }
+
+    public func reportPlaybackProgress(itemId: String, position: TimeInterval, isPaused: Bool, isStopped: Bool, playSessionId: String?, mediaSourceId: String?) async throws {
+        let endpoint = isStopped ? "Sessions/Playing/Stopped" : "Sessions/Playing/Progress"
         let url = serverBaseURL.appendingPathComponent(endpoint)
         var request = makeAuthorizedRequest(url: url)
         request.httpMethod = "POST"
@@ -157,10 +171,16 @@ public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
             "ItemId": itemId,
             "PositionTicks": ticks,
             "IsPaused": isPaused,
-            "EventName": "timeupdate"
+            "EventName": isStopped ? "stopped" : "timeupdate"
         ]
-        request.httpBody = try? JSONSerialization.data(withJSONObject: body)
-        _ = try? await URLSession.shared.data(for: request)
+        var mutableBody = body
+        if let playSessionId { mutableBody["PlaySessionId"] = playSessionId }
+        if let mediaSourceId { mutableBody["MediaSourceId"] = mediaSourceId }
+        request.httpBody = try JSONSerialization.data(withJSONObject: mutableBody)
+        let (_, response) = try await URLSession.shared.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse, (200..<300).contains(httpResponse.statusCode) else {
+            throw MediaServerError.requestFailed(statusCode: (response as? HTTPURLResponse)?.statusCode ?? 500)
+        }
     }
 
     // MARK: - Helpers

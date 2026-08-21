@@ -26,6 +26,10 @@
 	<!-- Local Network Privacy Description -->
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Vimu uses your local network to discover media servers and receive video casting requests from devices and apps on your network.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_upnp._tcp</string>
+	</array>
 	
 	<!-- App Transport Security for LAN / HTTP Video Streams -->
 	<key>NSAppTransportSecurity</key>

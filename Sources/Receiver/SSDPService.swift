@@ -24,6 +24,33 @@ public final class SSDPService: NSObject, @unchecked Sendable, NetServiceDelegat
     // Recent discovery logs for Diagnostics
     public var onDiscoveryEvent: ((String) -> Void)?
 
+    public static func parseMSearchTarget(_ packet: String) -> String? {
+        let lines = packet.components(separatedBy: "\r\n")
+        guard let firstLine = lines.first, firstLine.uppercased().hasPrefix("M-SEARCH") else { return nil }
+        var headers: [String: String] = [:]
+        for line in lines.dropFirst() {
+            let parts = line.split(separator: ":", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespaces) }
+            if parts.count == 2 { headers[parts[0].uppercased()] = parts[1] }
+        }
+        guard let man = headers["MAN"], man.lowercased().contains("ssdp:discover") else { return nil }
+        return headers["ST"]
+    }
+
+    public static func targetTypes(for udn: String) -> [(st: String, usn: String)] {
+        [("upnp:rootdevice", "\(udn)::upnp:rootdevice"), (udn, udn),
+         ("urn:schemas-upnp-org:device:MediaRenderer:1", "\(udn)::urn:schemas-upnp-org:device:MediaRenderer:1"),
+         ("urn:schemas-upnp-org:service:AVTransport:1", "\(udn)::urn:schemas-upnp-org:service:AVTransport:1"),
+         ("urn:schemas-upnp-org:service:RenderingControl:1", "\(udn)::urn:schemas-upnp-org:service:RenderingControl:1"),
+         ("urn:schemas-upnp-org:service:ConnectionManager:1", "\(udn)::urn:schemas-upnp-org:service:ConnectionManager:1")]
+    }
+
+    public static func mSearchResponses(for st: String, udn: String, location: String, date: String) -> [Data] {
+        targetTypes(for: udn).compactMap { target in
+            guard st == "ssdp:all" || st == target.st else { return nil }
+            return "HTTP/1.1 200 OK\r\nCACHE-CONTROL: max-age=1800\r\nDATE: \(date)\r\nEXT:\r\nLOCATION: \(location)\r\nSERVER: iOS/17 UPnP/1.0 Vimu/0.1\r\nST: \(target.st)\r\nUSN: \(target.usn)\r\nBOOTID.UPNP.ORG: 1\r\n\r\n".data(using: .utf8)
+        }
+    }
+
     private override init() {
         super.init()
     }
@@ -134,23 +161,7 @@ public final class SSDPService: NSObject, @unchecked Sendable, NetServiceDelegat
     }
 
     private func processIncomingPacket(_ packet: String, clientAddr: sockaddr_in) {
-        let lines = packet.components(separatedBy: "\r\n")
-        guard let firstLine = lines.first, firstLine.uppercased().hasPrefix("M-SEARCH") else {
-            return
-        }
-
-        var headers: [String: String] = [:]
-        for line in lines.dropFirst() {
-            let parts = line.split(separator: ":", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespaces) }
-            if parts.count == 2 {
-                headers[parts[0].uppercased()] = parts[1]
-            }
-        }
-
-        guard let man = headers["MAN"], man.contains("ssdp:discover"),
-              let st = headers["ST"] else {
-            return
-        }
+        guard let st = Self.parseMSearchTarget(packet) else { return }
 
         let eventLog = "M-SEARCH for ST: \(st)"
         logger.info("\(eventLog)")
@@ -165,38 +176,13 @@ public final class SSDPService: NSObject, @unchecked Sendable, NetServiceDelegat
         let port = HTTPServer.shared.port
         let location = "http://\(ip):\(port)/description.xml"
 
-        let targetTypes: [(st: String, usn: String)] = [
-            ("upnp:rootdevice", "\(device.udn)::upnp:rootdevice"),
-            (device.udn, device.udn),
-            ("urn:schemas-upnp-org:device:MediaRenderer:1", "\(device.udn)::urn:schemas-upnp-org:device:MediaRenderer:1"),
-            ("urn:schemas-upnp-org:service:AVTransport:1", "\(device.udn)::urn:schemas-upnp-org:service:AVTransport:1"),
-            ("urn:schemas-upnp-org:service:RenderingControl:1", "\(device.udn)::urn:schemas-upnp-org:service:RenderingControl:1"),
-            ("urn:schemas-upnp-org:service:ConnectionManager:1", "\(device.udn)::urn:schemas-upnp-org:service:ConnectionManager:1")
-        ]
 
         var targetAddr = clientAddr
-        for target in targetTypes {
-            if st == "ssdp:all" || st == target.st {
-                let response = """
-                HTTP/1.1 200 OK\r
-                CACHE-CONTROL: max-age=1800\r
-                DATE: \(httpDateString())\r
-                EXT:\r
-                LOCATION: \(location)\r
-                SERVER: iOS/17 UPnP/1.0 Vimu/0.1\r
-                ST: \(target.st)\r
-                USN: \(target.usn)\r
-                BOOTID.UPNP.ORG: 1\r
-                \r\n
-                """
-
-                if let data = response.data(using: .utf8), bsdSocketFD >= 0 {
-                    data.withUnsafeBytes { rawPtr in
-                        _ = withUnsafePointer(to: &targetAddr) {
-                            $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
-                                sendto(bsdSocketFD, rawPtr.baseAddress, data.count, 0, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
-                            }
-                        }
+        for data in Self.mSearchResponses(for: st, udn: device.udn, location: location, date: httpDateString()) where bsdSocketFD >= 0 {
+            data.withUnsafeBytes { rawPtr in
+                _ = withUnsafePointer(to: &targetAddr) {
+                    $0.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                        sendto(bsdSocketFD, rawPtr.baseAddress, data.count, 0, $0, socklen_t(MemoryLayout<sockaddr_in>.size))
                     }
                 }
             }
@@ -242,18 +228,7 @@ public final class SSDPService: NSObject, @unchecked Sendable, NetServiceDelegat
     }
 
     private func handleNWPacket(_ packet: String, message: NWConnectionGroup.Message) {
-        let lines = packet.components(separatedBy: "\r\n")
-        guard let firstLine = lines.first, firstLine.uppercased().hasPrefix("M-SEARCH") else { return }
-
-        var headers: [String: String] = [:]
-        for line in lines.dropFirst() {
-            let parts = line.split(separator: ":", maxSplits: 1).map { String($0).trimmingCharacters(in: .whitespaces) }
-            if parts.count == 2 {
-                headers[parts[0].uppercased()] = parts[1]
-            }
-        }
-
-        guard let man = headers["MAN"], man.contains("ssdp:discover"), let st = headers["ST"] else { return }
+        guard let st = Self.parseMSearchTarget(packet) else { return }
         onDiscoveryEvent?("NW M-SEARCH for ST: \(st)")
 
         let device = UPnPDevice.shared
@@ -261,33 +236,9 @@ public final class SSDPService: NSObject, @unchecked Sendable, NetServiceDelegat
         let port = HTTPServer.shared.port
         let location = "http://\(ip):\(port)/description.xml"
 
-        let targetTypes: [(st: String, usn: String)] = [
-            ("upnp:rootdevice", "\(device.udn)::upnp:rootdevice"),
-            (device.udn, device.udn),
-            ("urn:schemas-upnp-org:device:MediaRenderer:1", "\(device.udn)::urn:schemas-upnp-org:device:MediaRenderer:1"),
-            ("urn:schemas-upnp-org:service:AVTransport:1", "\(device.udn)::urn:schemas-upnp-org:service:AVTransport:1"),
-            ("urn:schemas-upnp-org:service:RenderingControl:1", "\(device.udn)::urn:schemas-upnp-org:service:RenderingControl:1"),
-            ("urn:schemas-upnp-org:service:ConnectionManager:1", "\(device.udn)::urn:schemas-upnp-org:service:ConnectionManager:1")
-        ]
 
-        for target in targetTypes {
-            if st == "ssdp:all" || st == target.st {
-                let response = """
-                HTTP/1.1 200 OK\r
-                CACHE-CONTROL: max-age=1800\r
-                DATE: \(httpDateString())\r
-                EXT:\r
-                LOCATION: \(location)\r
-                SERVER: iOS/17 UPnP/1.0 Vimu/0.1\r
-                ST: \(target.st)\r
-                USN: \(target.usn)\r
-                BOOTID.UPNP.ORG: 1\r
-                \r\n
-                """
-                if let data = response.data(using: .utf8) {
-                    message.reply(content: data)
-                }
-            }
+        for data in Self.mSearchResponses(for: st, udn: device.udn, location: location, date: httpDateString()) {
+            message.reply(content: data)
         }
     }
 

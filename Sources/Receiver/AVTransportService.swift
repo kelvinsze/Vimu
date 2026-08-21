@@ -120,7 +120,7 @@ public final class AVTransportService: @unchecked Sendable {
             let session = await MainActor.run { PlayerService.shared.session }
             let durationStr = SOAPParser.formatUPnPTime(session.duration)
             let currentStr = SOAPParser.formatUPnPTime(session.currentTime)
-            let uri = session.currentItem?.url.absoluteString ?? ""
+            let uri = SOAPParser.escapeXML(session.currentItem?.url.absoluteString ?? "")
 
             let content = """
                   <Track>1</Track>
@@ -142,7 +142,7 @@ public final class AVTransportService: @unchecked Sendable {
         case "GetMediaInfo":
             let session = await MainActor.run { PlayerService.shared.session }
             let durationStr = SOAPParser.formatUPnPTime(session.duration)
-            let uri = session.currentItem?.url.absoluteString ?? ""
+            let uri = SOAPParser.escapeXML(session.currentItem?.url.absoluteString ?? "")
 
             let content = """
                   <NrTracks>1</NrTracks>

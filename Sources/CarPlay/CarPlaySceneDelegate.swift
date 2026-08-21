@@ -15,8 +15,7 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
     private var cancellables = Set<AnyCancellable>()
 
     @Published public private(set) var isConnected: Bool = false
-    @Published public private(set) var isVideoPlaybackAvailable: Bool = true
-    @Published public private(set) var isDrivingRestricted: Bool = false
+    @Published public private(set) var isVideoPlaybackAvailable: Bool = false
 
     override public init() {
         super.init()
@@ -52,31 +51,23 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
         self.sessionConfiguration = nil
         self.isConnected = false
         cancellables.removeAll()
-        CarPlayVideoPresentation.shared.detachVideo()
     }
 
     // MARK: - CPSessionConfigurationDelegate
 
     public func sessionConfiguration(_ sessionConfiguration: CPSessionConfiguration, limitedUserInterfacesChanged limitedUserInterfaces: CPLimitableUserInterface) {
-        let isRestricted = !limitedUserInterfaces.isEmpty
-        self.isDrivingRestricted = isRestricted
-        logger.info("CarPlay driving limits changed. Restricted: \(isRestricted)")
-
-        if isRestricted {
-            // Vehicle is in motion -> strictly pause or mute video display according to safety rules
-            if PlayerService.shared.session.status == .playing {
-                logger.info("Vehicle in motion: Pausing video playback for automotive safety.")
-                PlayerService.shared.pause()
-            }
-        }
+        logger.info("CarPlay limited user interfaces changed: \(limitedUserInterfaces.rawValue)")
         refreshCarPlayUI()
     }
 
     // MARK: - Vehicle State Inspection
 
     private func updateVehicleCapabilities() {
-        // CPSessionConfiguration monitors the car's current state
-        self.isVideoPlaybackAvailable = true
+        guard let sessionConfiguration else {
+            self.isVideoPlaybackAvailable = false
+            return
+        }
+        self.isVideoPlaybackAvailable = CarPlayVideoPresentation.isVideoPlaybackSupported(sessionConfiguration: sessionConfiguration)
     }
 
     private func refreshCarPlayUI() {

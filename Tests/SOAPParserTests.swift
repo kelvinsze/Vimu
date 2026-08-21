@@ -87,4 +87,74 @@ final class SOAPParserTests: XCTestCase {
         XCTAssertTrue(html.contains("Vimu Car"))
         XCTAssertTrue(html.contains("/api/play"))
     }
+
+    func testEscapeXML() {
+        XCTAssertEqual(SOAPParser.escapeXML("https://example.test/a?x=1&y=<2"), "https://example.test/a?x=1&amp;y=&lt;2")
+    }
+
+    func testSavedServerInfoDoesNotEncodeToken() throws {
+        let info = SavedServerInfo(
+            name: "Test",
+            url: URL(string: "https://example.test")!,
+            serverType: .jellyfin,
+            username: "user",
+            token: "secret-token"
+        )
+        let data = try JSONEncoder().encode(info)
+        let json = String(decoding: data, as: UTF8.self)
+        XCTAssertFalse(json.contains("secret-token"))
+        XCTAssertFalse(json.contains("\"token\""))
+        XCTAssertFalse(json.contains("\"username\""))
+        XCTAssertFalse(json.contains("\"userId\""))
+        KeychainTokenStore.delete(for: info.id)
+    }
+
+    func testPlaybackInfoSelectionPrefersDirectPlay() {
+        let payload: [String: Any] = [
+            "PlaySessionId": "session-1",
+            "MediaSources": [[
+                "Id": "source-1",
+                "SupportsDirectPlay": true,
+                "SupportsDirectStream": true,
+                "SupportsTranscoding": true,
+                "DirectStreamUrl": "Videos/abc/master.m3u8",
+                "TranscodingUrl": "Videos/abc/transcode.m3u8"
+            ]],
+            "UserData": ["PlaybackPositionTicks": 20_000_000.0]
+        ]
+        let info = MediaPlaybackInfoSelector.select(itemId: "abc", baseURL: URL(string: "https://media.test/")!, payload: payload)
+        XCTAssertEqual(info?.method, .directPlay)
+        XCTAssertEqual(info?.url.absoluteString, "https://media.test/Videos/abc/stream?Static=true&MediaSourceId=source-1")
+        XCTAssertEqual(info?.resumePosition, 2.0)
+        XCTAssertEqual(info?.mediaSourceId, "source-1")
+    }
+
+    func testCredentialMigrationOnlyRunsForLegacyFields() {
+        XCTAssertFalse(MediaServerCredentialMigration.shouldMigrate(hasUsername: false, hasUserId: false, hasToken: false))
+        XCTAssertTrue(MediaServerCredentialMigration.shouldMigrate(hasUsername: true, hasUserId: false, hasToken: false))
+    }
+
+    func testUnknownMediaServerTypeFailsDecoding() {
+        let data = Data("{\"id\":\"00000000-0000-0000-0000-000000000001\",\"name\":\"x\",\"url\":\"https://example.test\",\"serverType\":\"plex\"}".utf8)
+        XCTAssertThrowsError(try JSONDecoder().decode(SavedServerInfo.self, from: data))
+    }
+
+    func testMediaServerTypeCodable() throws {
+        let data = try JSONEncoder().encode(MediaServerType.emby)
+        XCTAssertEqual(String(decoding: data, as: UTF8.self), "\"emby\"")
+        XCTAssertEqual(try JSONDecoder().decode(MediaServerType.self, from: data), .emby)
+    }
+
+    func testSSDPMSearchParsingAndResponseConstruction() {
+        let packet = "M-SEARCH * HTTP/1.1\r\nMAN: \"ssdp:discover\"\r\nST: ssdp:all\r\n\r\n"
+        XCTAssertEqual(SSDPService.parseMSearchTarget(packet), "ssdp:all")
+        let responses = SSDPService.mSearchResponses(for: "ssdp:all", udn: "uuid:test", location: "http://127.0.0.1:7890/description.xml", date: "now")
+        XCTAssertEqual(responses.count, 6)
+        XCTAssertTrue(String(decoding: responses[0], as: UTF8.self).contains("HTTP/1.1 200 OK"))
+    }
+
+    func testHistoryItemStripsHeaders() {
+        let item = MediaItem(title: "Video", url: URL(string: "https://media.test/video.mp4")!, headers: ["Authorization": "Bearer secret", "Cookie": "session=secret"])
+        XCTAssertNil(item.withoutSensitiveHeaders().headers)
+    }
 }

@@ -1,5 +1,6 @@
 import Foundation
 import CarPlay
+import CoreMedia
 import OSLog
 
 private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "CarPlayTemplateBuilder")
@@ -20,6 +21,7 @@ public final class CarPlayTemplateBuilder {
                 detailText: "\(isPlaying ? "▶ 正在播放" : "⏸ 已暂停") · \(SOAPParser.formatUPnPTime(session.currentTime)) / \(SOAPParser.formatUPnPTime(session.duration))",
                 image: UIImage(systemName: isPlaying ? "pause.circle.fill" : "play.circle.fill")
             )
+            configureVideoPlayback(nowPlayingItem, for: current, isCurrentlyPlaying: isPlaying)
             nowPlayingItem.handler = { _, completion in
                 PlayerService.shared.togglePlayPause()
                 completion()
@@ -33,8 +35,8 @@ public final class CarPlayTemplateBuilder {
             let serverItems = savedServers.map { server in
                 let item = CPListItem(
                     text: server.name,
-                    detailText: server.serverType.uppercased() + " 媒体库",
-                    image: UIImage(systemName: server.serverType == "emby" ? "tv.fill" : "play.square.stack.fill")
+                    detailText: server.serverType.rawValue.uppercased() + " 媒体库",
+                    image: UIImage(systemName: server.serverType == .emby ? "tv.fill" : "play.square.stack.fill")
                 )
                 item.handler = { _, completion in
                     // Push server library list on CarPlay
@@ -53,6 +55,7 @@ public final class CarPlayTemplateBuilder {
                 detailText: sample.mimeType?.contains("mpegURL") == true ? "HLS 视频流" : "MP4 视频",
                 image: UIImage(systemName: "film.fill")
             )
+            configureVideoPlayback(item, for: sample)
             item.handler = { _, completion in
                 PlayerService.shared.loadAndPlay(item: sample)
                 completion()
@@ -105,6 +108,16 @@ public final class CarPlayTemplateBuilder {
         }
     }
 
+    private static func configureVideoPlayback(_ item: CPListItem, for media: MediaItem, isCurrentlyPlaying: Bool = false) {
+        guard #available(iOS 26.4, *), CarPlaySceneDelegate.shared?.isVideoPlaybackAvailable == true else { return }
+        item.playbackConfiguration = CPPlaybackConfiguration(
+            preferredPresentation: .video,
+            playbackAction: isCurrentlyPlaying ? .pause : .play,
+            elapsedTime: CMTime(seconds: media.resumePosition ?? 0, preferredTimescale: 600),
+            duration: CMTime(seconds: media.duration ?? 0, preferredTimescale: 600)
+        )
+    }
+
     private static func pushLibraryVideos(client: MediaServerProtocol, library: MediaLibrary, interfaceController: CPInterfaceController) {
         Task {
             do {
@@ -115,8 +128,19 @@ public final class CarPlayTemplateBuilder {
                         detailText: video.duration != nil ? SOAPParser.formatUPnPTime(video.duration!) : "视频",
                         image: UIImage(systemName: "play.circle.fill")
                     )
+                    if #available(iOS 26.4, *), CarPlaySceneDelegate.shared?.isVideoPlaybackAvailable == true {
+                        item.playbackConfiguration = CPPlaybackConfiguration(
+                            preferredPresentation: .video,
+                            playbackAction: .play,
+                            elapsedTime: CMTime(seconds: video.resumePosition ?? 0, preferredTimescale: 600),
+                            duration: CMTime(seconds: video.duration ?? 0, preferredTimescale: 600)
+                        )
+                    }
                     item.handler = { _, completion in
-                        PlayerService.shared.loadAndPlay(item: video)
+                        Task {
+                            let resolved = (try? await client.resolvePlaybackItem(video)) ?? video
+                            await MainActor.run { PlayerService.shared.loadAndPlay(item: resolved) }
+                        }
                         completion()
                     }
                     return item

@@ -8,6 +8,9 @@ public struct ServerDetailView: View {
     @State private var libraries: [MediaLibrary] = []
     @State private var selectedLibrary: MediaLibrary?
     @State private var libraryItems: [MediaItem] = []
+    @State private var searchText = ""
+    @State private var searchResults: [MediaItem] = []
+    @State private var continueWatching: [MediaItem] = []
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var isShowingPlayer = false
@@ -19,6 +22,22 @@ public struct ServerDetailView: View {
     public var body: some View {
         List {
             // MARK: - Libraries Section
+            if !continueWatching.isEmpty {
+                Section("Continue Watching") {
+                    ForEach(continueWatching) { item in
+                        Button(item.title) { play(item) }
+                    }
+                }
+            }
+
+            if !searchResults.isEmpty {
+                Section("Search Results") {
+                    ForEach(searchResults) { item in
+                        Button(item.title) { play(item) }
+                    }
+                }
+            }
+
             if !libraries.isEmpty {
                 Section("Media Libraries") {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -64,8 +83,7 @@ public struct ServerDetailView: View {
                 } else {
                     ForEach(libraryItems) { item in
                         Button {
-                            playerService.loadAndPlay(item: item)
-                            isShowingPlayer = true
+                            play(item)
                         } label: {
                             HStack(spacing: 14) {
                                 Image(systemName: "play.circle.fill")
@@ -107,7 +125,10 @@ public struct ServerDetailView: View {
         .navigationTitle(serverInfo.name)
         .onAppear {
             loadLibraries()
+            loadContinueWatching()
         }
+        .searchable(text: $searchText, prompt: "Search media")
+        .onSubmit(of: .search) { search() }
         .fullScreenCover(isPresented: $isShowingPlayer) {
             PlayerView()
         }
@@ -136,6 +157,37 @@ public struct ServerDetailView: View {
                     self.errorMessage = error.localizedDescription
                     self.isLoading = false
                 }
+            }
+        }
+    }
+
+    private func loadContinueWatching() {
+        guard let client = MediaServerManager.shared.getClient(for: serverInfo.id) else { return }
+        Task {
+            let items = (try? await client.fetchContinueWatching(limit: 10)) ?? []
+            await MainActor.run { continueWatching = items }
+        }
+    }
+
+    private func search() {
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !query.isEmpty, let client = MediaServerManager.shared.getClient(for: serverInfo.id) else {
+            searchResults = []
+            return
+        }
+        Task {
+            let items = (try? await client.search(query: query, limit: 30)) ?? []
+            await MainActor.run { searchResults = items }
+        }
+    }
+
+    private func play(_ item: MediaItem) {
+        guard let client = MediaServerManager.shared.getClient(for: serverInfo.id) else { return }
+        Task {
+            let resolved = (try? await client.resolvePlaybackItem(item)) ?? item
+            await MainActor.run {
+                playerService.loadAndPlay(item: resolved)
+                isShowingPlayer = true
             }
         }
     }

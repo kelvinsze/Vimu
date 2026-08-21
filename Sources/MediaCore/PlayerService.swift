@@ -24,6 +24,7 @@ public final class PlayerService: ObservableObject {
     private var itemBufferEmptyObserver: NSKeyValueObservation?
     private var itemBufferKeepUpObserver: NSKeyValueObservation?
     private var cancellables = Set<AnyCancellable>()
+    private var lastProgressReportDate = Date.distantPast
 
     public init() {
         let avPlayer = AVPlayer()
@@ -75,8 +76,10 @@ public final class PlayerService: ObservableObject {
 
         // Update session
         session.currentItem = item
+        lastProgressReportDate = .distantPast
         session.status = .loading
-        session.currentTime = 0
+        let resumePosition = max(0, item.resumePosition ?? 0)
+        session.currentTime = resumePosition
         session.duration = item.duration ?? 0
         session.bufferedTime = 0
         session.errorMessage = nil
@@ -116,6 +119,9 @@ public final class PlayerService: ObservableObject {
 
         // Replace current item and play
         player.replaceCurrentItem(with: playerItem)
+        if resumePosition > 0 {
+            player.seek(to: CMTime(seconds: resumePosition, preferredTimescale: 600), toleranceBefore: .zero, toleranceAfter: .zero)
+        }
         player.rate = selectedSpeed
         player.play()
 
@@ -136,9 +142,11 @@ public final class PlayerService: ObservableObject {
         player.pause()
         session.status = .paused
         updateNowPlayingInfo()
+        reportPlaybackProgress(force: true, isPaused: true, isStopped: false)
     }
 
     public func stop() {
+        reportPlaybackProgress(force: true, isPaused: true, isStopped: true)
         player.pause()
         player.replaceCurrentItem(with: nil)
         session.status = .stopped
@@ -212,6 +220,7 @@ public final class PlayerService: ObservableObject {
                 let current = CMTimeGetSeconds(time)
                 if current.isFinite && !current.isNaN {
                     self.session.currentTime = max(0, current)
+                    self.reportPlaybackProgress(force: false, isPaused: false, isStopped: false)
                 }
             }
         }
@@ -272,6 +281,7 @@ public final class PlayerService: ObservableObject {
                 Task { @MainActor [weak self] in
                     logger.info("Reached end of media playback.")
                     self?.session.status = .stopped
+                    self?.reportPlaybackProgress(force: true, isPaused: true, isStopped: true)
                     self?.updateNowPlayingInfo()
                 }
             }
@@ -296,6 +306,30 @@ public final class PlayerService: ObservableObject {
                 }
             }
             .store(in: &cancellables)
+    }
+
+    private func reportPlaybackProgress(force: Bool, isPaused: Bool, isStopped: Bool) {
+        guard let item = session.currentItem,
+              let itemId = item.serverItemID,
+              let serverID = item.serverID else { return }
+        if !force && !isStopped && Date().timeIntervalSince(lastProgressReportDate) < 15 { return }
+        lastProgressReportDate = Date()
+        guard let client = MediaServerManager.shared.getClient(for: serverID) else { return }
+        let position = session.currentTime
+        Task {
+            do {
+                try await client.reportPlaybackProgress(
+                    itemId: itemId,
+                    position: position,
+                    isPaused: isPaused,
+                    isStopped: isStopped,
+                    playSessionId: item.playSessionID,
+                    mediaSourceId: item.mediaSourceID
+                )
+            } catch {
+                logger.debug("Playback progress report failed: \(error.localizedDescription)")
+            }
+        }
     }
 
     private func handleAudioInterruption(_ notification: Notification) {

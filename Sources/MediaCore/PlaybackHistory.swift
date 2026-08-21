@@ -19,9 +19,10 @@ public final class PlaybackHistory: ObservableObject {
 
     public func addOrUpdate(item: MediaItem) {
         // Remove existing item with identical URL
-        items.removeAll { $0.url == item.url }
+        let safeItem = item.withoutSensitiveHeaders()
+        items.removeAll { $0.url == safeItem.url }
         // Insert most recent at the top
-        items.insert(item, at: 0)
+        items.insert(safeItem, at: 0)
 
         if items.count > maxHistoryEntries {
             items = Array(items.prefix(maxHistoryEntries))
@@ -42,7 +43,9 @@ public final class PlaybackHistory: ObservableObject {
     private func loadHistory() {
         guard let data = UserDefaults.standard.data(forKey: userDefaultsKey) else { return }
         do {
-            items = try JSONDecoder().decode([MediaItem].self, from: data)
+            items = try JSONDecoder().decode([MediaItem].self, from: data).map { $0.withoutSensitiveHeaders() }
+            // Remove legacy Authorization/Cookie fields from the persisted history.
+            saveHistory()
         } catch {
             logger.error("Failed to decode playback history: \(error.localizedDescription)")
         }

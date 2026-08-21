@@ -183,8 +183,7 @@ public struct HomeView: View {
                 ForEach(history.items) { item in
                     HStack {
                         Button {
-                            playerService.loadAndPlay(item: item)
-                            isShowingPlayerSheet = true
+                            playHistoryItem(item)
                         } label: {
                             HStack {
                                 Image(systemName: "play.circle.fill")
@@ -277,6 +276,23 @@ public struct HomeView: View {
     }
 
     // MARK: - Actions
+
+    private func playHistoryItem(_ item: MediaItem) {
+        guard item.sourceType == .personalMedia,
+              let serverID = item.serverID,
+              let client = MediaServerManager.shared.getClient(for: serverID) else {
+            playerService.loadAndPlay(item: item)
+            isShowingPlayerSheet = true
+            return
+        }
+        Task {
+            let resolved = (try? await client.resolvePlaybackItem(item)) ?? item
+            await MainActor.run {
+                playerService.loadAndPlay(item: resolved)
+                isShowingPlayerSheet = true
+            }
+        }
+    }
 
     private func playInputUrl() {
         let trimmed = inputUrlText.trimmingCharacters(in: .whitespacesAndNewlines)

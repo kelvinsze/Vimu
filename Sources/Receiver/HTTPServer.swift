@@ -162,19 +162,6 @@ public final class HTTPServer: @unchecked Sendable {
                 sendResponse(connection: connection, statusCode: 500, contentType: "text/xml; charset=\"utf-8\"", body: fault)
             }
 
-        // MARK: - UPnP GENA Eventing (SUBSCRIBE / UNSUBSCRIBE)
-        case ("SUBSCRIBE", let p) where p.hasPrefix("/upnp/event/"):
-            let sid = "uuid:vimu-sub-" + UUID().uuidString.lowercased()
-            let headers = [
-                "SID": sid,
-                "TIMEOUT": "Second-1800",
-                "SERVER": "iOS/17 UPnP/1.0 Vimu/0.1"
-            ]
-            sendResponseWithCustomHeaders(connection: connection, statusCode: 200, headers: headers, body: "")
-
-        case ("UNSUBSCRIBE", let p) where p.hasPrefix("/upnp/event/"):
-            sendResponse(connection: connection, statusCode: 200, contentType: "text/plain", body: "OK")
-
         // MARK: - REST API for Local Web Remote & Diagnostics
         case ("GET", "/api/status"):
             Task {
@@ -508,4 +495,3 @@ public enum NetworkHelper {
         return address
     }
 }
-

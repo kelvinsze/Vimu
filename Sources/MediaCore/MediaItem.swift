@@ -19,6 +19,11 @@ public struct MediaItem: Identifiable, Codable, Equatable, Sendable {
     public var posterUrl: URL?
     public var headers: [String: String]?
     public var originator: String?
+    public var serverID: UUID?
+    public var serverItemID: String?
+    public var playSessionID: String?
+    public var mediaSourceID: String?
+    public var resumePosition: TimeInterval?
     public var createdAt: Date
 
     public init(
@@ -31,6 +36,11 @@ public struct MediaItem: Identifiable, Codable, Equatable, Sendable {
         posterUrl: URL? = nil,
         headers: [String: String]? = nil,
         originator: String? = nil,
+        serverID: UUID? = nil,
+        serverItemID: String? = nil,
+        playSessionID: String? = nil,
+        mediaSourceID: String? = nil,
+        resumePosition: TimeInterval? = nil,
         createdAt: Date = Date()
     ) {
         self.id = id
@@ -42,7 +52,20 @@ public struct MediaItem: Identifiable, Codable, Equatable, Sendable {
         self.posterUrl = posterUrl
         self.headers = headers
         self.originator = originator
+        self.serverID = serverID
+        self.serverItemID = serverItemID
+        self.playSessionID = playSessionID
+        self.mediaSourceID = mediaSourceID
+        self.resumePosition = resumePosition
         self.createdAt = createdAt
+    }
+
+    public func withoutSensitiveHeaders() -> MediaItem {
+        var copy = self
+        copy.headers = nil
+        copy.playSessionID = nil
+        copy.mediaSourceID = nil
+        return copy
     }
 }
 

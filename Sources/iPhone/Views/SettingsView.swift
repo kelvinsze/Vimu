@@ -39,17 +39,23 @@ public struct SettingsView: View {
                     HStack {
                         Text("CarPlay Video Capability")
                         Spacer()
-                        Label("Approved & Active", systemImage: "checkmark.seal.fill")
+                        Label(
+                            "Cannot verify signed entitlement",
+                            systemImage: "questionmark.diamond"
+                        )
                             .font(.caption.bold())
-                            .foregroundColor(.green)
+                            .foregroundColor(.secondary)
                     }
 
                     HStack {
                         Text("Multicast Networking")
                         Spacer()
-                        Label("Active", systemImage: "checkmark.seal.fill")
+                        Label(
+                            "Cannot verify signed entitlement",
+                            systemImage: "questionmark.diamond"
+                        )
                             .font(.caption)
-                            .foregroundColor(.green)
+                            .foregroundColor(.secondary)
                     }
                 }
 

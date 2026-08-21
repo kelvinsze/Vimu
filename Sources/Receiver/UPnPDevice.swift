@@ -55,21 +55,18 @@ public final class UPnPDevice: @unchecked Sendable {
                 <serviceId>urn:upnp-org:serviceId:AVTransport</serviceId>
                 <SCPDURL>/avtransport.xml</SCPDURL>
                 <controlURL>/upnp/control/avtransport</controlURL>
-                <eventSubURL>/upnp/event/avtransport</eventSubURL>
               </service>
               <service>
                 <serviceType>urn:schemas-upnp-org:service:RenderingControl:1</serviceType>
                 <serviceId>urn:upnp-org:serviceId:RenderingControl</serviceId>
                 <SCPDURL>/renderingcontrol.xml</SCPDURL>
                 <controlURL>/upnp/control/renderingcontrol</controlURL>
-                <eventSubURL>/upnp/event/renderingcontrol</eventSubURL>
               </service>
               <service>
                 <serviceType>urn:schemas-upnp-org:service:ConnectionManager:1</serviceType>
                 <serviceId>urn:upnp-org:serviceId:ConnectionManager</serviceId>
                 <SCPDURL>/connectionmanager.xml</SCPDURL>
                 <controlURL>/upnp/control/connectionmanager</controlURL>
-                <eventSubURL>/upnp/event/connectionmanager</eventSubURL>
               </service>
             </serviceList>
           </device>

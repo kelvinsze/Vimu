@@ -46,7 +46,7 @@ public struct ServersView: View {
                                 ServerDetailView(serverInfo: server)
                             } label: {
                                 HStack(spacing: 14) {
-                                    Image(systemName: server.serverType == "emby" ? "tv.fill" : "play.square.stack.fill")
+                                    Image(systemName: server.serverType == .emby ? "tv.fill" : "play.square.stack.fill")
                                         .font(.title2)
                                         .foregroundColor(.cyan)
 
@@ -94,7 +94,7 @@ struct AddServerView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var serverName = ""
     @State private var serverUrlStr = ""
-    @State private var serverType = "jellyfin"
+    @State private var serverType: MediaServerType = .jellyfin
     @State private var username = ""
     @State private var password = ""
     @State private var isAuthenticating = false
@@ -105,8 +105,8 @@ struct AddServerView: View {
             Form {
                 Section("Server Connection") {
                     Picker("Server Type", selection: $serverType) {
-                        Text("Jellyfin").tag("jellyfin")
-                        Text("Emby").tag("emby")
+                        Text("Jellyfin").tag(MediaServerType.jellyfin)
+                        Text("Emby").tag(MediaServerType.emby)
                     }
                     .pickerStyle(.segmented)
 
@@ -159,7 +159,7 @@ struct AddServerView: View {
         let name = serverName.isEmpty ? (url.host ?? "Media Server") : serverName
 
         Task {
-            if serverType == "emby" {
+            if serverType == .emby {
                 let client = EmbyClient(serverName: name, serverBaseURL: url)
                 do {
                     let token = try await client.authenticate(username: username, password: password)
@@ -167,7 +167,7 @@ struct AddServerView: View {
                         MediaServerManager.shared.addServer(
                             name: name,
                             url: url,
-                            type: "emby",
+                            type: .emby,
                             username: username,
                             token: token,
                             userId: client.userId
@@ -189,7 +189,7 @@ struct AddServerView: View {
                         MediaServerManager.shared.addServer(
                             name: name,
                             url: url,
-                            type: "jellyfin",
+                            type: .jellyfin,
                             username: username,
                             token: token,
                             userId: client.userId

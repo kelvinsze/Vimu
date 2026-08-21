@@ -96,6 +96,16 @@ public final class SOAPParser {
         """
     }
 
+    /// Escapes dynamic values before embedding them in an XML response.
+    public static func escapeXML(_ string: String) -> String {
+        string
+            .replacingOccurrences(of: "&", with: "&amp;")
+            .replacingOccurrences(of: "<", with: "&lt;")
+            .replacingOccurrences(of: ">", with: "&gt;")
+            .replacingOccurrences(of: "\"", with: "&quot;")
+            .replacingOccurrences(of: "'", with: "&apos;")
+    }
+
     /// Generates UPnP SOAP Fault XML.
     public static func makeSOAPFault(errorCode: Int = 401, errorDescription: String = "Invalid Action") -> String {
         return """
