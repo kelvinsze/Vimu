@@ -3,7 +3,6 @@ import SwiftUI
 /// Settings view for configuring UPnP device friendly name, port, and viewing entitlement status.
 public struct SettingsView: View {
     @AppStorage("vimu_custom_friendly_name") private var customFriendlyName: String = ""
-    @State private var serverPortText: String = "\(HTTPServer.shared.port)"
     @State private var isShowingSavedAlert = false
 
     public init() {}
@@ -36,21 +35,21 @@ public struct SettingsView: View {
                     }
                 }
 
-                Section("Entitlement & Capability Status") {
+                Section("Apple Entitlement & Capability Status") {
+                    HStack {
+                        Text("CarPlay Video Capability")
+                        Spacer()
+                        Label("Approved & Active", systemImage: "checkmark.seal.fill")
+                            .font(.caption.bold())
+                            .foregroundColor(.green)
+                    }
+
                     HStack {
                         Text("Multicast Networking")
                         Spacer()
                         Label("Active", systemImage: "checkmark.seal.fill")
                             .font(.caption)
                             .foregroundColor(.green)
-                    }
-
-                    HStack {
-                        Text("CarPlay Video")
-                        Spacer()
-                        Label("Pending Approval", systemImage: "clock.badge.questionmark")
-                            .font(.caption)
-                            .foregroundColor(.orange)
                     }
                 }
 
@@ -65,7 +64,7 @@ public struct SettingsView: View {
                     HStack {
                         Text("Target Architecture")
                         Spacer()
-                        Text("MediaCore + DLNA + CarPlay")
+                        Text("MediaCore + DLNA + CarPlay Video")
                             .foregroundColor(.secondary)
                     }
 
