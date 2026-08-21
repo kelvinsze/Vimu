@@ -1,4 +1,5 @@
 import SwiftUI
+import CarPlay
 import OSLog
 
 private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "VimuApp")
@@ -14,7 +15,7 @@ struct VimuApp: App {
     }
 }
 
-/// Custom AppDelegate for application lifecycle and global background service bootstrapping.
+/// Custom AppDelegate managing application lifecycle, scene routing (Phone vs CarPlay), and background services.
 final class AppDelegate: NSObject, UIApplicationDelegate {
 
     func application(
@@ -30,6 +31,25 @@ final class AppDelegate: NSObject, UIApplicationDelegate {
         SSDPService.shared.start()
 
         return true
+    }
+
+    // Dynamic scene session configuration routing for CarPlay and Phone
+    func application(
+        _ application: UIApplication,
+        configurationForConnecting connectingSceneSession: UISceneSession,
+        options: UIScene.ConnectionOptions
+    ) -> UISceneConfiguration {
+        if connectingSceneSession.role == .carTemplateApplication || connectingSceneSession.role.rawValue == "CPTemplateApplicationSceneSessionRoleApplication" {
+            logger.info("Connecting CarPlay scene configuration...")
+            let config = UISceneConfiguration(name: "CarPlay Configuration", sessionRole: connectingSceneSession.role)
+            config.delegateClass = CarPlaySceneDelegate.self
+            return config
+        } else {
+            logger.info("Connecting Phone UIWindowScene configuration...")
+            let config = UISceneConfiguration(name: "Phone Configuration", sessionRole: connectingSceneSession.role)
+            config.delegateClass = PhoneSceneDelegate.self
+            return config
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {

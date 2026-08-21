@@ -415,6 +415,7 @@
 				);
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kold.vimu;
+				PRODUCT_MODULE_NAME = Vimu;
 				PRODUCT_NAME = Vimu;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;
@@ -441,6 +442,7 @@
 				);
 				MARKETING_VERSION = 0.1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.kold.vimu;
+				PRODUCT_MODULE_NAME = Vimu;
 				PRODUCT_NAME = Vimu;
 				SDKROOT = iphoneos;
 				SWIFT_VERSION = 5.0;

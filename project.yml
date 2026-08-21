@@ -23,6 +23,8 @@ targets:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.kold.vimu
         PRODUCT_NAME: Vimu
+        PRODUCT_MODULE_NAME: Vimu
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: 1
         TARGETED_DEVICE_FAMILY: "1,2"
