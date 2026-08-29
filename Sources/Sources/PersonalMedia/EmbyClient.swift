@@ -39,8 +39,9 @@ public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let authHeader = "MediaBrowser Client=\"Vimu\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"0.1.0\""
+        let authHeader = "MediaBrowser Client=\"Emby for iOS\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"2.2.31\""
         request.setValue(authHeader, forHTTPHeaderField: "X-Emby-Authorization")
+        request.setValue("Emby/2.2.31 (iPhone; iOS 18.6; Scale/3.00)", forHTTPHeaderField: "User-Agent")
 
         let body: [String: String] = ["Username": username, "Pw": password]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
@@ -203,7 +204,8 @@ public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
 
     private func authorizationHeaders() -> [String: String] {
         var headers = [
-            "X-Emby-Authorization": "MediaBrowser Client=\"Vimu\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"0.1.0\""
+            "X-Emby-Authorization": "MediaBrowser Client=\"Emby for iOS\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"2.2.31\"",
+            "User-Agent": "Emby/2.2.31 (iPhone; iOS 18.6; Scale/3.00)"
         ]
         if let token = accessToken {
             headers["X-Emby-Token"] = token
