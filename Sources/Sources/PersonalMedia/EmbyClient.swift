@@ -53,8 +53,11 @@ public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-            throw MediaServerError.authenticationFailed
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw MediaServerError.invalidResponse
+        }
+        guard httpResponse.statusCode == 200 else {
+            throw MediaServerError.requestFailed(statusCode: httpResponse.statusCode)
         }
 
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
