@@ -34,16 +34,22 @@ public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
     // MARK: - Authentication
 
     public func authenticate(username: String, password: String) async throws -> String {
-        let authURL = serverBaseURL.appendingPathComponent("emby/Users/AuthenticateByName")
+        let authURL = serverBaseURL.appendingPathComponent("Users/AuthenticateByName")
         var request = URLRequest(url: authURL)
         request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
-        let authHeader = "MediaBrowser Client=\"Emby for iOS\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"2.2.31\""
+        let authHeader = "MediaBrowser Client=\"Emby for iOS\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"2.1.2\""
+        request.setValue(authHeader, forHTTPHeaderField: "Authorization")
         request.setValue(authHeader, forHTTPHeaderField: "X-Emby-Authorization")
-        request.setValue("Emby/2.2.31 (iPhone; iOS 18.6; Scale/3.00)", forHTTPHeaderField: "User-Agent")
+        request.setValue("Emby/2.1.2", forHTTPHeaderField: "X-Application")
+        request.setValue("Emby/2.1.2 (com.emby.ios; build:38; iOS 18.0.0) Alamofire/5.9.1", forHTTPHeaderField: "User-Agent")
 
-        let body: [String: String] = ["Username": username, "Pw": password]
+        let body: [String: String] = [
+            "Username": username.trimmingCharacters(in: .whitespacesAndNewlines),
+            "Pw": password
+        ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
         let (data, response) = try await URLSession.shared.data(for: request)
@@ -203,9 +209,13 @@ public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
     }
 
     private func authorizationHeaders() -> [String: String] {
+        let authHeader = "MediaBrowser Client=\"Emby for iOS\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"2.1.2\""
         var headers = [
-            "X-Emby-Authorization": "MediaBrowser Client=\"Emby for iOS\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"2.2.31\"",
-            "User-Agent": "Emby/2.2.31 (iPhone; iOS 18.6; Scale/3.00)"
+            "Accept": "application/json",
+            "Authorization": authHeader,
+            "X-Emby-Authorization": authHeader,
+            "X-Application": "Emby/2.1.2",
+            "User-Agent": "Emby/2.1.2 (com.emby.ios; build:38; iOS 18.0.0) Alamofire/5.9.1"
         ]
         if let token = accessToken {
             headers["X-Emby-Token"] = token

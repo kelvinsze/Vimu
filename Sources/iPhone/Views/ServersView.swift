@@ -152,6 +152,7 @@ struct AddServerView: View {
             errorMessage = "Invalid server URL."
             return
         }
+        let normalizedUsername = username.trimmingCharacters(in: .whitespacesAndNewlines)
 
         isAuthenticating = true
         errorMessage = nil
@@ -162,13 +163,13 @@ struct AddServerView: View {
             if serverType == .emby {
                 let client = EmbyClient(serverName: name, serverBaseURL: url)
                 do {
-                    let token = try await client.authenticate(username: username, password: password)
+                    let token = try await client.authenticate(username: normalizedUsername, password: password)
                     await MainActor.run {
                         MediaServerManager.shared.addServer(
                             name: name,
                             url: url,
                             type: .emby,
-                            username: username,
+                            username: normalizedUsername,
                             token: token,
                             userId: client.userId
                         )
