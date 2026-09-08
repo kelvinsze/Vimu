@@ -29,7 +29,6 @@ public final class PlayerService: ObservableObject {
     public init() {
         let avPlayer = AVPlayer()
         avPlayer.allowsExternalPlayback = true
-        avPlayer.usesExternalPlaybackWhileExternalScreenIsActive = true
         avPlayer.externalPlaybackVideoGravity = .resizeAspect
         avPlayer.automaticallyWaitsToMinimizeStalling = true
         self.player = avPlayer
