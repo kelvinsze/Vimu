@@ -26,7 +26,7 @@ public struct PlayerView: View {
                 player: playerService.player,
                 videoGravity: playerService.videoGravity
             )
-            .ignoresSafeArea()
+            .ignoresSafeArea(edges: [.top, .bottom])
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.25)) {
                     isControlsVisible.toggle()
