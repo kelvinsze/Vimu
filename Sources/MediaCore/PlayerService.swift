@@ -30,6 +30,7 @@ public final class PlayerService: ObservableObject {
         let avPlayer = AVPlayer()
         avPlayer.allowsExternalPlayback = true
         avPlayer.usesExternalPlaybackWhileExternalScreenIsActive = true
+        avPlayer.externalPlaybackVideoGravity = .resizeAspect
         avPlayer.automaticallyWaitsToMinimizeStalling = true
         self.player = avPlayer
 
@@ -197,6 +198,7 @@ public final class PlayerService: ObservableObject {
         } else {
             videoGravity = .resizeAspect
         }
+        player.externalPlaybackVideoGravity = videoGravity
     }
 
     public func setVolume(_ volume: Float) {
