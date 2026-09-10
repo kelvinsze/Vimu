@@ -1,7 +1,7 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "AVTransportService")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "AVTransportService")
 
 /// Handles UPnP AVTransport and RenderingControl SOAP actions, bridging them to PlayerService.
 public final class AVTransportService: @unchecked Sendable {
@@ -36,7 +36,8 @@ public final class AVTransportService: @unchecked Sendable {
             )
 
             await MainActor.run {
-                PlayerService.shared.loadAndPlay(item: item)
+                PlayerService.shared.loadAndPlay(item: item, origin: "SOAP.SetAVTransportURI")
+                CarPlaySceneDelegate.shared?.presentIncomingPlayback()
             }
 
             let body = SOAPParser.makeSOAPResponse(
@@ -80,10 +81,11 @@ public final class AVTransportService: @unchecked Sendable {
             return (200, body)
 
         case "Seek":
+            SSDPService.shared.recordCastDebug("SOAP Seek unit=\(action.parameters["Unit"] ?? "missing") target=\(action.parameters["Target"] ?? "missing")")
             if let target = action.parameters["Target"] {
                 let seconds = SOAPParser.parseUPnPTime(target)
                 await MainActor.run {
-                    PlayerService.shared.seek(to: seconds)
+                    PlayerService.shared.seek(to: seconds, origin: "SOAP.Seek")
                 }
             }
             let body = SOAPParser.makeSOAPResponse(
@@ -109,6 +111,9 @@ public final class AVTransportService: @unchecked Sendable {
                   <CurrentTransportStatus>OK</CurrentTransportStatus>
                   <CurrentSpeed>1</CurrentSpeed>
             """
+            if session.currentItem?.sourceType == .dlna {
+                SSDPService.shared.recordCastDebug("SOAP GetTransportInfo response state=\(state) status=OK")
+            }
             let body = SOAPParser.makeSOAPResponse(
                 actionName: "GetTransportInfo",
                 serviceType: avTransportServiceType,
@@ -121,6 +126,10 @@ public final class AVTransportService: @unchecked Sendable {
             let durationStr = SOAPParser.formatUPnPTime(session.duration)
             let currentStr = SOAPParser.formatUPnPTime(session.currentTime)
             let uri = SOAPParser.escapeXML(session.currentItem?.url.absoluteString ?? "")
+
+            if session.currentItem?.sourceType == .dlna {
+                SSDPService.shared.recordCastDebug("SOAP GetPositionInfo response position=\(currentStr) duration=\(durationStr)")
+            }
 
             let content = """
                   <Track>1</Track>

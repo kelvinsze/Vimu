@@ -10,6 +10,7 @@ public struct DiagnosticsView: View {
     @State private var probeUrlInput = "https://v-cdn.zjol.com.cn/280443.mp4"
     @State private var probeResult: String?
     @State private var isProbing = false
+    @State private var playbackLogsOnly = false
 
     public init() {}
 
@@ -127,13 +128,30 @@ public struct DiagnosticsView: View {
                             .font(.caption.monospaced())
                     }
 
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Active Discovery Paths")
+                            .font(.subheadline)
+                        Text("Multicast · Broadcast · Loopback multicast/unicast · Local-address unicast")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+
+                    if let lastPath = UserDefaults.standard.string(forKey: "mivu_last_successful_cast_path") {
+                        HStack {
+                            Text("Last Media-Ready Path")
+                            Spacer()
+                            Text(lastPath)
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        }
+                    }
+
                     Button {
-                        SSDPService.shared.sendSSDPAlive()
-                        addLog("Manually broadcasted SSDP alive notification.")
+                        SSDPService.shared.sendAllDiscoveryAnnouncements()
                     } label: {
                         HStack {
                             Image(systemName: "antenna.radiowaves.left.and.right")
-                            Text("Broadcast SSDP Announcement Now")
+                            Text("Send All Discovery Announcements")
                         }
                     }
 
@@ -150,14 +168,23 @@ public struct DiagnosticsView: View {
 
                 // MARK: - Live Diagnostic Log
                 Section("Live Event Log") {
+                    Toggle("仅显示播放诊断", isOn: $playbackLogsOnly)
+                    Button(playbackLogsOnly ? "复制播放诊断日志" : "复制完整诊断日志", systemImage: "doc.on.doc") {
+                        UIPasteboard.general.string = visibleDiagnosticLogs.reversed().joined(separator: "\n")
+                    }
+                    Button("清空诊断日志", systemImage: "trash", role: .destructive) {
+                        diagnosticLog.removeAll()
+                        SSDPService.shared.clearDiagnosticHistory()
+                    }
                     if diagnosticLog.isEmpty {
                         Text("No diagnostic events yet.")
                             .font(.caption)
                             .foregroundColor(.secondary)
                     } else {
-                        ForEach(Array(diagnosticLog.prefix(30).enumerated()), id: \.offset) { _, log in
+                        ForEach(Array(visibleDiagnosticLogs.prefix(200).enumerated()), id: \.offset) { _, log in
                             Text(log)
                                 .font(.caption2.monospaced())
+                                .textSelection(.enabled)
                         }
                     }
                 }
@@ -210,7 +237,14 @@ public struct DiagnosticsView: View {
     private func setupSSDPListener() {
         SSDPService.shared.onDiscoveryEvent = { event in
             Task { @MainActor in
-                self.addLog(event)
+                self.addReceiverLog(event)
+            }
+        }
+        SSDPService.shared.requestDiagnosticHistory { events in
+            Task { @MainActor in
+                for event in events.reversed() {
+                    self.addReceiverLog(event)
+                }
             }
         }
     }
@@ -288,6 +322,19 @@ public struct DiagnosticsView: View {
         let timestamp = DateFormatter.localizedString(from: Date(), dateStyle: .none, timeStyle: .medium)
         diagnosticLog.insert("[\(timestamp)] \(message)", at: 0)
     }
+
+    private var visibleDiagnosticLogs: [String] {
+        diagnosticLog.filter {
+            !playbackLogsOnly || $0.contains("[DEBUG-playback]") || $0.contains("[DEBUG-cast]")
+        }
+    }
+
+    private func addReceiverLog(_ entry: String) {
+        // History already carries the event's original timestamp, not the time this view opens.
+        guard !diagnosticLog.contains(entry) else { return }
+        diagnosticLog.insert(entry, at: 0)
+        if diagnosticLog.count > 400 { diagnosticLog.removeLast(diagnosticLog.count - 400) }
+    }
 }
 
 public struct NetworkInterfaceInfo: Identifiable, Sendable {
@@ -302,4 +349,3 @@ public struct NetworkInterfaceInfo: Identifiable, Sendable {
         self.ipAddress = ipAddress
     }
 }
-

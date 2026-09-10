@@ -1,7 +1,7 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "SOAPParser")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "SOAPParser")
 
 /// Represents a parsed UPnP SOAP action.
 public struct SOAPActionRequest {

@@ -3,7 +3,7 @@ import CarPlay
 import CoreMedia
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "CarPlayTemplateBuilder")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "CarPlayTemplateBuilder")
 
 /// Builds CPListTemplates and action sheets for CarPlay UI.
 @MainActor
@@ -75,7 +75,7 @@ public final class CarPlayTemplateBuilder {
         }
         sections.append(CPListSection(items: [statusItem], header: "投送接收器状态", sectionIndexTitle: nil))
 
-        let template = CPListTemplate(title: "Vimu", sections: sections)
+        let template = CPListTemplate(title: "Mivu", sections: sections)
         return template
     }
 
@@ -110,6 +110,9 @@ public final class CarPlayTemplateBuilder {
 
     private static func configureVideoPlayback(_ item: CPListItem, for media: MediaItem, isCurrentlyPlaying: Bool = false) {
         guard #available(iOS 26.4, *), CarPlaySceneDelegate.shared?.isVideoPlaybackAvailable == true else { return }
+        if media.sourceType == .dlna {
+            SSDPService.shared.recordCastDebug("CARPLAY configure elapsed=\(media.resumePosition ?? 0) duration=\(media.duration ?? 0) isPlaying=\(isCurrentlyPlaying)")
+        }
         item.playbackConfiguration = CPPlaybackConfiguration(
             preferredPresentation: .video,
             playbackAction: isCurrentlyPlaying ? .pause : .play,

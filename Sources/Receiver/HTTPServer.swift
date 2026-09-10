@@ -2,14 +2,14 @@ import Foundation
 import Network
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "HTTPServer")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "HTTPServer")
 
 /// Embedded lightweight HTTP & REST / Web Remote server using Network.framework.
 public final class HTTPServer: @unchecked Sendable {
     public static let shared = HTTPServer()
 
     private var listener: NWListener?
-    private let queue = DispatchQueue(label: "com.kelvinsze.vimu.httpserver", qos: .userInitiated)
+    private let queue = DispatchQueue(label: "com.kelvinsze.mivu.httpserver", qos: .userInitiated)
     private var isRunning = false
     public private(set) var port: UInt16 = 7890
 
@@ -37,7 +37,7 @@ public final class HTTPServer: @unchecked Sendable {
                 switch state {
                 case .ready:
                     self?.isRunning = true
-                    logger.info("Vimu HTTP Server listening on port \(port). IP: \(self?.localIPAddress ?? "unknown")")
+                    logger.info("Mivu HTTP Server listening on port \(port). IP: \(self?.localIPAddress ?? "unknown")")
                 case .failed(let error):
                     logger.error("HTTP Server listener failed: \(error.localizedDescription)")
                     self?.isRunning = false
@@ -128,24 +128,37 @@ public final class HTTPServer: @unchecked Sendable {
         }
 
         let method = String(parts[0]).uppercased()
-        let path = String(parts[1])
-        logger.info("HTTP Request: \(method) \(path)")
+        let requestTarget = String(parts[1])
+        let path = String(requestTarget.split(separator: "?", maxSplits: 1).first ?? "")
+        let discoveryHint = URLComponents(string: "http://localhost\(requestTarget)")?
+            .queryItems?
+            .first(where: { $0.name == "via" })?
+            .value
+        logger.info("HTTP Request: \(method) \(requestTarget)")
 
         switch (method, path) {
         // MARK: - UPnP Device Description & SCPD
         case ("GET", "/description.xml"):
+            SSDPService.shared.recordHTTPStage(
+                "description.xml",
+                remoteEndpoint: connection.currentPath?.remoteEndpoint,
+                discoveryHint: discoveryHint
+            )
             let xml = UPnPDevice.shared.deviceDescriptionXML(hostIP: localIPAddress)
             sendResponse(connection: connection, statusCode: 200, contentType: "text/xml; charset=\"utf-8\"", body: xml)
 
         case ("GET", "/avtransport.xml"):
+            SSDPService.shared.recordHTTPStage("avtransport.xml", remoteEndpoint: connection.currentPath?.remoteEndpoint)
             let xml = UPnPDevice.shared.avTransportSCPD()
             sendResponse(connection: connection, statusCode: 200, contentType: "text/xml; charset=\"utf-8\"", body: xml)
 
         case ("GET", "/renderingcontrol.xml"):
+            SSDPService.shared.recordHTTPStage("renderingcontrol.xml", remoteEndpoint: connection.currentPath?.remoteEndpoint)
             let xml = UPnPDevice.shared.renderingControlSCPD()
             sendResponse(connection: connection, statusCode: 200, contentType: "text/xml; charset=\"utf-8\"", body: xml)
 
         case ("GET", "/connectionmanager.xml"):
+            SSDPService.shared.recordHTTPStage("connectionmanager.xml", remoteEndpoint: connection.currentPath?.remoteEndpoint)
             let xml = UPnPDevice.shared.connectionManagerSCPD()
             sendResponse(connection: connection, statusCode: 200, contentType: "text/xml; charset=\"utf-8\"", body: xml)
 
@@ -153,6 +166,7 @@ public final class HTTPServer: @unchecked Sendable {
         case ("POST", let p) where p.hasPrefix("/upnp/control/"):
             let soapActionHeader = headers["soapaction"]
             if let action = SOAPParser.parseAction(bodyData: bodyData, soapActionHeader: soapActionHeader) {
+                SSDPService.shared.recordHTTPStage(action.actionName, remoteEndpoint: connection.currentPath?.remoteEndpoint)
                 Task {
                     let result = await AVTransportService.shared.handleRequest(action: action)
                     self.sendResponse(connection: connection, statusCode: result.statusCode, contentType: "text/xml; charset=\"utf-8\"", body: result.responseBody)
@@ -165,7 +179,9 @@ public final class HTTPServer: @unchecked Sendable {
         // MARK: - REST API for Local Web Remote & Diagnostics
         case ("GET", "/api/status"):
             Task {
-                let session = await MainActor.run { PlayerService.shared.session }
+                let (session, mpvRenderDiagnostic) = await MainActor.run {
+                    (PlayerService.shared.session, PlayerService.shared.activeMPVRenderDiagnostic ?? "")
+                }
                 let responseDict: [String: Any] = [
                     "status": session.status.rawValue,
                     "title": session.currentItem?.title ?? "",
@@ -176,7 +192,8 @@ public final class HTTPServer: @unchecked Sendable {
                     "isMuted": session.isMuted,
                     "ip": self.localIPAddress,
                     "port": self.port,
-                    "friendlyName": UPnPDevice.shared.friendlyName
+                    "friendlyName": UPnPDevice.shared.friendlyName,
+                    "mpvRenderDiagnostic": mpvRenderDiagnostic
                 ]
                 if let jsonData = try? JSONSerialization.data(withJSONObject: responseDict, options: [.prettyPrinted]),
                    let jsonString = String(data: jsonData, encoding: .utf8) {
@@ -245,7 +262,7 @@ public final class HTTPServer: @unchecked Sendable {
         let bodyData = Data(body.utf8)
         let responseHeader = """
         HTTP/1.1 \(statusCode) \(statusText)\r
-        Server: iOS/17 UPnP/1.0 Vimu/0.1\r
+        Server: iOS/17 UPnP/1.0 Mivu/0.1\r
         Content-Type: \(contentType)\r
         Content-Length: \(bodyData.count)\r
         Access-Control-Allow-Origin: *\r
@@ -289,7 +306,7 @@ enum WebRemoteTemplate {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-          <title>Vimu 网页遥控器</title>
+          <title>Mivu 网页遥控器</title>
           <style>
             :root {
               --bg: #0b0f19;
@@ -389,7 +406,7 @@ enum WebRemoteTemplate {
         <body>
           <div class="app-container">
             <header>
-              <h1>Vimu 遥控与投送</h1>
+              <h1>Mivu 遥控与投送</h1>
               <div class="badge">\(friendlyName)</div>
             </header>
 
@@ -404,7 +421,7 @@ enum WebRemoteTemplate {
             </div>
 
             <div class="card">
-              <div class="card-title">推送视频 URL 到 CarPlay / Vimu</div>
+              <div class="card-title">推送视频 URL 到 CarPlay / Mivu</div>
               <input type="text" id="videoUrlInput" placeholder="输入 HTTP/HTTPS 或 HLS m3u8 链接">
               <button class="btn-primary" onclick="pushVideo()">🚀 立即投送播放</button>
             </div>
@@ -459,39 +476,47 @@ enum WebRemoteTemplate {
 // MARK: - Network IP Helper
 
 public enum NetworkHelper {
-    public static func getWiFiAddress() -> String? {
-        var address: String?
+    public struct IPv4Interface: Sendable {
+        public let name: String
+        public let address: String
+    }
+
+    public static func activeIPv4Interfaces() -> [IPv4Interface] {
+        var results: [IPv4Interface] = []
         var ifaddr: UnsafeMutablePointer<ifaddrs>?
 
-        guard getifaddrs(&ifaddr) == 0, let firstAddr = ifaddr else { return nil }
+        guard getifaddrs(&ifaddr) == 0, let firstAddr = ifaddr else { return [] }
         defer { freeifaddrs(ifaddr) }
 
         for ptr in sequence(first: firstAddr, next: { $0.pointee.ifa_next }) {
             let interface = ptr.pointee
-            let addrFamily = interface.ifa_addr.pointee.sa_family
+            guard let socketAddress = interface.ifa_addr,
+                  socketAddress.pointee.sa_family == UInt8(AF_INET),
+                  (interface.ifa_flags & UInt32(IFF_UP)) != 0 else { continue }
 
-            if addrFamily == UInt8(AF_INET) {
-                let name = String(cString: interface.ifa_name)
-                if name == "en0" || name == "pdp_ip0" || name == "lo0" {
-                    var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
-                    getnameinfo(
-                        interface.ifa_addr,
-                        socklen_t(interface.ifa_addr.pointee.sa_len),
-                        &hostname,
-                        socklen_t(hostname.count),
-                        nil,
-                        0,
-                        NI_NUMERICHOST
-                    )
-                    let ip = String(cString: hostname)
-                    if name == "en0" {
-                        return ip
-                    } else if address == nil {
-                        address = ip
-                    }
-                }
-            }
+            var hostname = [CChar](repeating: 0, count: Int(NI_MAXHOST))
+            guard getnameinfo(
+                socketAddress,
+                socklen_t(socketAddress.pointee.sa_len),
+                &hostname,
+                socklen_t(hostname.count),
+                nil,
+                0,
+                NI_NUMERICHOST
+            ) == 0 else { continue }
+
+            results.append(IPv4Interface(
+                name: String(cString: interface.ifa_name),
+                address: String(cString: hostname)
+            ))
         }
-        return address
+        return results
+    }
+
+    public static func getWiFiAddress() -> String? {
+        let interfaces = activeIPv4Interfaces()
+        return interfaces.first(where: { $0.name == "en0" })?.address
+            ?? interfaces.first(where: { $0.name.hasPrefix("pdp_ip") })?.address
+            ?? interfaces.first(where: { $0.name == "lo0" })?.address
     }
 }

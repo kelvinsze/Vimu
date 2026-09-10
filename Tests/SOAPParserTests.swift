@@ -1,5 +1,5 @@
 import XCTest
-@testable import Vimu
+@testable import Mivu
 
 final class SOAPParserTests: XCTestCase {
 
@@ -74,7 +74,7 @@ final class SOAPParserTests: XCTestCase {
     }
 
     func testDeepLinkParsing() {
-        let url = URL(string: "vimu://play?url=https%3A%2F%2Fexample.com%2Fstream.m3u8&title=TestStream")!
+        let url = URL(string: "mivu://play?url=https%3A%2F%2Fexample.com%2Fstream.m3u8&title=TestStream")!
         let item = URLSource.parseDeepLink(url: url)
         XCTAssertNotNil(item)
         XCTAssertEqual(item?.title, "TestStream")
@@ -82,9 +82,9 @@ final class SOAPParserTests: XCTestCase {
     }
 
     func testWebRemoteTemplateRender() {
-        let html = WebRemoteTemplate.render(ip: "192.168.1.88", port: 7890, friendlyName: "Vimu Car")
-        XCTAssertTrue(html.contains("Vimu 网页遥控器"))
-        XCTAssertTrue(html.contains("Vimu Car"))
+        let html = WebRemoteTemplate.render(ip: "192.168.1.88", port: 7890, friendlyName: "Mivu Car")
+        XCTAssertTrue(html.contains("Mivu 网页遥控器"))
+        XCTAssertTrue(html.contains("Mivu Car"))
         XCTAssertTrue(html.contains("/api/play"))
     }
 
@@ -129,6 +129,21 @@ final class SOAPParserTests: XCTestCase {
         XCTAssertEqual(info?.mediaSourceId, "source-1")
     }
 
+    func testPlaybackInfoSelectionUsesHLSTranscodeWhenDirectPlayIsUnavailable() {
+        let payload: [String: Any] = [
+            "MediaSources": [[
+                "Id": "source-1",
+                "SupportsDirectPlay": false,
+                "SupportsTranscoding": true,
+                "TranscodingUrl": "Videos/abc/transcode.m3u8"
+            ]]
+        ]
+
+        let info = MediaPlaybackInfoSelector.select(itemId: "abc", baseURL: URL(string: "https://media.test/")!, payload: payload)
+        XCTAssertEqual(info?.method, .transcode)
+        XCTAssertEqual(info?.url.absoluteString, "https://media.test/Videos/abc/transcode.m3u8")
+    }
+
     func testCredentialMigrationOnlyRunsForLegacyFields() {
         XCTAssertFalse(MediaServerCredentialMigration.shouldMigrate(hasUsername: false, hasUserId: false, hasToken: false))
         XCTAssertTrue(MediaServerCredentialMigration.shouldMigrate(hasUsername: true, hasUserId: false, hasToken: false))
@@ -143,6 +158,9 @@ final class SOAPParserTests: XCTestCase {
         let data = try JSONEncoder().encode(MediaServerType.emby)
         XCTAssertEqual(String(decoding: data, as: UTF8.self), "\"emby\"")
         XCTAssertEqual(try JSONDecoder().decode(MediaServerType.self, from: data), .emby)
+        XCTAssertEqual(try JSONDecoder().decode(MediaServerType.self, from: Data("\"webdav\"".utf8)), .webDAV)
+        XCTAssertEqual(try JSONDecoder().decode(MediaServerType.self, from: Data("\"smb\"".utf8)), .smb)
+        XCTAssertEqual(try JSONDecoder().decode(MediaServerType.self, from: Data("\"fnos\"".utf8)), .fnos)
     }
 
     func testSSDPMSearchParsingAndResponseConstruction() {
@@ -153,8 +171,72 @@ final class SOAPParserTests: XCTestCase {
         XCTAssertTrue(String(decoding: responses[0], as: UTF8.self).contains("HTTP/1.1 200 OK"))
     }
 
+    func testSSDPDiscoveryPathClassification() {
+        XCTAssertEqual(SSDPService.discoveryPath(forRemoteHost: "127.0.0.1"), .loopbackUnicast)
+        XCTAssertEqual(
+            SSDPService.discoveryPath(forRemoteHost: "192.168.1.10", knownPath: .bsdMulticast),
+            .bsdMulticast
+        )
+        XCTAssertEqual(SSDPService.discoveryPath(forRemoteHost: "203.0.113.1"), .unknown)
+        XCTAssertEqual(SSDPService.discoveryPath(forHint: "bsd-msearch"), .bsdMulticast)
+        XCTAssertEqual(SSDPService.discoveryPath(forHint: "nw-notify"), .networkFramework)
+        XCTAssertEqual(SSDPService.discoveryPath(forHint: "loopback-multicast"), .loopbackMulticast)
+        XCTAssertEqual(SSDPService.discoveryPath(forHint: "loopback-unicast"), .loopbackUnicast)
+        XCTAssertNil(SSDPService.discoveryPath(forHint: "vpn-boost"))
+    }
+
     func testHistoryItemStripsHeaders() {
         let item = MediaItem(title: "Video", url: URL(string: "https://media.test/video.mp4")!, headers: ["Authorization": "Bearer secret", "Cookie": "session=secret"])
         XCTAssertNil(item.withoutSensitiveHeaders().headers)
+    }
+
+    func testReceiverServiceDescriptionsHaveResolvableArguments() {
+        let device = UPnPDevice.shared
+        let description = device.deviceDescriptionXML(hostIP: "192.168.1.2")
+        XCTAssertEqual(description.components(separatedBy: "<eventSubURL></eventSubURL>").count - 1, 3)
+        for xml in [device.avTransportSCPD(), device.renderingControlSCPD(), device.connectionManagerSCPD()] {
+            let inspector = SCPDContractInspector()
+            let parser = XMLParser(data: Data(xml.utf8))
+            parser.delegate = inspector
+            XCTAssertTrue(parser.parse())
+            XCTAssertFalse(inspector.variables.isEmpty)
+            XCTAssertFalse(inspector.actionArgumentCounts.isEmpty)
+            XCTAssertTrue(inspector.actionArgumentCounts.allSatisfy { $0 > 0 })
+            XCTAssertTrue(inspector.references.allSatisfy { inspector.variables.contains($0) })
+            XCTAssertFalse(xml.contains("sendEvents=\"yes\""), "No event subscription endpoint is implemented")
+        }
+    }
+
+    func testDiscoveryLocationMatchesControllerRoute() {
+        XCTAssertEqual(SSDPService.responseHost(remoteHost: "127.0.0.1", localAddresses: [], routeAddress: "10.0.0.2", fallbackAddress: "10.0.0.2"), "127.0.0.1")
+        XCTAssertEqual(SSDPService.responseHost(remoteHost: "192.168.9.151", localAddresses: ["192.168.9.151"], routeAddress: "127.0.0.1", fallbackAddress: "10.0.0.2"), "192.168.9.151")
+        XCTAssertEqual(SSDPService.responseHost(remoteHost: "192.168.2.5", localAddresses: ["192.168.1.2", "192.168.2.2"], routeAddress: "192.168.2.2", fallbackAddress: "192.168.1.2"), "192.168.2.2")
+        XCTAssertEqual(SSDPService.descriptionLocation(host: "192.168.2.2", port: 7890), "http://192.168.2.2:7890/description.xml")
+    }
+}
+
+private final class SCPDContractInspector: NSObject, XMLParserDelegate {
+    var variables = Set<String>()
+    var references: [String] = []
+    var actionArgumentCounts: [Int] = []
+    private var elements: [String] = []
+    private var value = ""
+    private var argumentCount = 0
+
+    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String: String]) {
+        elements.append(elementName)
+        value = ""
+        if elementName == "action" { argumentCount = 0 }
+    }
+
+    func parser(_ parser: XMLParser, foundCharacters string: String) { value += string }
+
+    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+        let text = value.trimmingCharacters(in: .whitespacesAndNewlines)
+        if elementName == "name", elements.dropLast().last == "stateVariable" { variables.insert(text) }
+        if elementName == "relatedStateVariable" { references.append(text) }
+        if elementName == "argument" { argumentCount += 1 }
+        if elementName == "action" { actionArgumentCounts.append(argumentCount) }
+        elements.removeLast()
     }
 }
