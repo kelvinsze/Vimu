@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// View for managing personal Emby & Jellyfin media servers.
+/// View for managing personal media servers and standard file shares.
 public struct ServersView: View {
     @ObservedObject var serverManager = MediaServerManager.shared
     @State private var isShowingAddServerSheet = false
@@ -21,7 +21,7 @@ public struct ServersView: View {
                             Text("No Media Servers Added")
                                 .font(.headline)
 
-                            Text("Connect your personal Emby or Jellyfin server to browse and stream your personal movies and TV shows directly on iPhone and CarPlay.")
+                            Text("Connect Emby, Jellyfin, WebDAV, SMB, or fnOS WebDAV to browse and stream your personal videos on iPhone and CarPlay.")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
@@ -30,7 +30,7 @@ public struct ServersView: View {
                             Button {
                                 isShowingAddServerSheet = true
                             } label: {
-                                Label("Add Emby / Jellyfin Server", systemImage: "plus.circle.fill")
+                                Label("Add Media Source", systemImage: "plus.circle.fill")
                                     .font(.subheadline.bold())
                             }
                             .buttonStyle(.borderedProminent)
@@ -46,7 +46,7 @@ public struct ServersView: View {
                                 ServerDetailView(serverInfo: server)
                             } label: {
                                 HStack(spacing: 14) {
-                                    Image(systemName: server.serverType == .emby ? "tv.fill" : "play.square.stack.fill")
+                                    Image(systemName: icon(for: server.serverType))
                                         .font(.title2)
                                         .foregroundColor(.cyan)
 
@@ -86,6 +86,15 @@ public struct ServersView: View {
             }
         }
     }
+
+    private func icon(for type: MediaServerType) -> String {
+        switch type {
+        case .emby: return "tv.fill"
+        case .jellyfin, .fnos: return "play.square.stack.fill"
+        case .webDAV: return "externaldrive.connected.to.line.below"
+        case .smb: return "folder.badge.gearshape"
+        }
+    }
 }
 
 // MARK: - Add Server Sheet
@@ -107,11 +116,14 @@ struct AddServerView: View {
                     Picker("Server Type", selection: $serverType) {
                         Text("Jellyfin").tag(MediaServerType.jellyfin)
                         Text("Emby").tag(MediaServerType.emby)
+                        Text("WebDAV").tag(MediaServerType.webDAV)
+                        Text("SMB").tag(MediaServerType.smb)
+                        Text("fnOS (WebDAV)").tag(MediaServerType.fnos)
                     }
-                    .pickerStyle(.segmented)
+                    .pickerStyle(.menu)
 
                     TextField("Server Name (e.g. Home Server)", text: $serverName)
-                    TextField("Server URL (http://192.168.1.10:8096)", text: $serverUrlStr)
+                    TextField(urlPlaceholder, text: $serverUrlStr)
                         .autocapitalization(.none)
                         .disableAutocorrection(true)
                         .keyboardType(.URL)
@@ -121,6 +133,20 @@ struct AddServerView: View {
                     TextField("Username", text: $username)
                         .autocapitalization(.none)
                     SecureField("Password", text: $password)
+                }
+
+                if serverType == .fnos {
+                    Section {
+                        Text("In fnOS, enable WebDAV under Settings → File Sharing Protocols, then paste its full WebDAV URL here. The fnOS private media API is not used.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
+                } else if serverType == .smb {
+                    Section {
+                        Text("Use smb://host/share/folder. SMB 2 is supported; SMB 1 is intentionally excluded.")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                    }
                 }
 
                 if let error = errorMessage {
@@ -147,6 +173,15 @@ struct AddServerView: View {
         }
     }
 
+    private var urlPlaceholder: String {
+        switch serverType {
+        case .emby: return "http://192.168.1.10:8096"
+        case .jellyfin: return "http://192.168.1.10:8096"
+        case .webDAV, .fnos: return "https://nas.example.com/webdav/"
+        case .smb: return "smb://192.168.1.10/Media/Movies"
+        }
+    }
+
     private func connectServer() {
         guard let url = URL(string: serverUrlStr.trimmingCharacters(in: .whitespacesAndNewlines)) else {
             errorMessage = "Invalid server URL."
@@ -160,49 +195,38 @@ struct AddServerView: View {
         let name = serverName.isEmpty ? (url.host ?? "Media Server") : serverName
 
         Task {
-            if serverType == .emby {
-                let client = EmbyClient(serverName: name, serverBaseURL: url)
-                do {
-                    let token = try await client.authenticate(username: normalizedUsername, password: password)
-                    await MainActor.run {
-                        MediaServerManager.shared.addServer(
-                            name: name,
-                            url: url,
-                            type: .emby,
-                            username: normalizedUsername,
-                            token: token,
-                            userId: client.userId
-                        )
-                        isAuthenticating = false
-                        dismiss()
-                    }
-                } catch {
-                    await MainActor.run {
-                        errorMessage = error.localizedDescription
-                        isAuthenticating = false
-                    }
+            do {
+                let client: MediaServerProtocol
+                let userID: String?
+                switch serverType {
+                case .emby:
+                    let emby = EmbyClient(serverName: name, serverBaseURL: url)
+                    client = emby; userID = emby.userId
+                case .jellyfin:
+                    let jellyfin = JellyfinClient(serverName: name, serverBaseURL: url)
+                    client = jellyfin; userID = jellyfin.userId
+                case .webDAV, .fnos:
+                    client = WebDAVClient(serverName: name, serverBaseURL: url, username: normalizedUsername)
+                    userID = nil
+                case .smb:
+                    client = try SMBMediaClient(serverName: name, serverBaseURL: url, username: normalizedUsername)
+                    userID = nil
                 }
-            } else {
-                let client = JellyfinClient(serverName: name, serverBaseURL: url)
-                do {
-                    let token = try await client.authenticate(username: username, password: password)
-                    await MainActor.run {
-                        MediaServerManager.shared.addServer(
-                            name: name,
-                            url: url,
-                            type: .jellyfin,
-                            username: username,
-                            token: token,
-                            userId: client.userId
-                        )
-                        isAuthenticating = false
-                        dismiss()
-                    }
-                } catch {
-                    await MainActor.run {
-                        errorMessage = error.localizedDescription
-                        isAuthenticating = false
-                    }
+                let token = try await client.authenticate(username: normalizedUsername, password: password)
+                let resolvedUserID: String? = {
+                    if let emby = client as? EmbyClient { return emby.userId }
+                    if let jellyfin = client as? JellyfinClient { return jellyfin.userId }
+                    return userID
+                }()
+                await MainActor.run {
+                    MediaServerManager.shared.addServer(name: name, url: url, type: serverType, username: normalizedUsername, token: token, userId: resolvedUserID)
+                    isAuthenticating = false
+                    dismiss()
+                }
+            } catch {
+                await MainActor.run {
+                    errorMessage = error.localizedDescription
+                    isAuthenticating = false
                 }
             }
         }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Main dashboard view for Vimu iPhone app.
+/// Main dashboard view for Mivu iPhone app.
 public struct HomeView: View {
     @ObservedObject var playerService = PlayerService.shared
     @ObservedObject var history = PlaybackHistory.shared
@@ -10,6 +10,8 @@ public struct HomeView: View {
     @State private var isShowingPlayerSheet = false
     @State private var errorMessage: String?
     @State private var isShowingErrorAlert = false
+    @State private var playbackResolveTask: Task<Void, Never>?
+    @State private var playbackResolveID: UUID?
 
     public init() {}
 
@@ -38,9 +40,18 @@ public struct HomeView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Vimu")
+            .navigationTitle("Mivu")
             .onAppear {
                 checkClipboard()
+            }
+            .onChange(of: playerService.session.currentItem?.id) { _, itemID in
+                // DLNA/Web Remote starts playback outside this view's buttons.
+                // Personal-media screens own their own player cover; presenting
+                // another one here makes the first launch immediately dismiss.
+                if itemID != nil,
+                   playerService.session.currentItem?.sourceType != .personalMedia {
+                    isShowingPlayerSheet = true
+                }
             }
             .safeAreaInset(edge: .bottom) {
                 if playerService.session.currentItem != nil {
@@ -285,11 +296,29 @@ public struct HomeView: View {
             isShowingPlayerSheet = true
             return
         }
-        Task {
-            let resolved = (try? await client.resolvePlaybackItem(item)) ?? item
-            await MainActor.run {
-                playerService.loadAndPlay(item: resolved)
-                isShowingPlayerSheet = true
+        playbackResolveTask?.cancel()
+        let resolveID = UUID()
+        playbackResolveID = resolveID
+        playbackResolveTask = Task {
+            do {
+                let resolved = try await client.resolvePlaybackItem(item)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard playbackResolveID == resolveID else { return }
+                    playbackResolveTask = nil
+                    playbackResolveID = nil
+                    playerService.loadAndPlay(item: resolved)
+                    isShowingPlayerSheet = true
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard playbackResolveID == resolveID else { return }
+                    playbackResolveTask = nil
+                    playbackResolveID = nil
+                    errorMessage = error.localizedDescription
+                    isShowingErrorAlert = true
+                }
             }
         }
     }

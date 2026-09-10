@@ -1,7 +1,7 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "EmbyClient")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "EmbyClient")
 
 /// Emby Server API client conforming to MediaServerProtocol.
 public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
@@ -151,7 +151,7 @@ public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
         guard let id = dict["Id"] as? String, let name = dict["Name"] as? String else { return nil }
         let duration = ((dict["RunTimeTicks"] as? Double) ?? 0) / 10_000_000
         let playback = MediaPlaybackInfoSelector.select(itemId: id, baseURL: serverBaseURL, payload: dict, streamPath: "emby/Videos/\(id)/stream")
-        return MediaItem(title: name, url: playback?.url ?? serverBaseURL.appendingPathComponent("emby/Videos/\(id)/stream.mp4"), sourceType: .personalMedia, mimeType: "video/mp4", duration: duration > 0 ? duration : nil, headers: authorizationHeaders(), originator: serverName, serverID: serverId, serverItemID: id, playSessionID: playback?.playSessionId, mediaSourceID: playback?.mediaSourceId, resumePosition: playback?.resumePosition ?? (((dict["UserData"] as? [String: Any])?["PlaybackPositionTicks"] as? Double ?? 0) / 10_000_000))
+        return MediaItem(title: name, url: playback?.url ?? serverBaseURL.appendingPathComponent("emby/Videos/\(id)/stream.mp4"), sourceType: .personalMedia, mimeType: "video/mp4", duration: duration > 0 ? duration : nil, headers: authorizationHeaders(), originator: serverName, serverID: serverId, serverItemID: id, playSessionID: playback?.playSessionId, mediaSourceID: playback?.mediaSourceId, resumePosition: playback?.resumePosition ?? (((dict["UserData"] as? [String: Any])?["PlaybackPositionTicks"] as? Double ?? 0) / 10_000_000), subtitleTracks: playback?.subtitleTracks)
     }
 
     public func fetchPlaybackInfo(itemId: String) async throws -> MediaPlaybackInfo {
@@ -166,15 +166,68 @@ public final class EmbyClient: MediaServerProtocol, @unchecked Sendable {
             "EnableDirectPlay": true,
             "EnableDirectStream": true,
             "EnableTranscoding": true,
-            "IsPlayback": true
+            "IsPlayback": true,
+            // Keep direct play to formats AVFoundation can reliably decode.
+            // Other sources receive Emby's HLS H.264/AAC transcode URL.
+            "DeviceProfile": [
+                "Name": "Mivu iOS",
+                "MaxStreamingBitrate": 40_000_000,
+                "DirectPlayProfiles": [
+                    ["Type": "Video", "Container": "mp4,m4v,mov", "VideoCodec": "h264", "AudioCodec": "aac,mp3"],
+                    ["Type": "Audio", "Container": "mp3,m4a,aac", "AudioCodec": "aac,mp3"]
+                ],
+                "TranscodingProfiles": [
+                    ["Type": "Video", "Container": "ts", "VideoCodec": "h264", "AudioCodec": "aac", "Protocol": "hls"]
+                ]
+            ]
         ])
-        let (data, response) = try await URLSession.shared.data(for: request)
-        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200,
-              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-              let info = MediaPlaybackInfoSelector.select(itemId: itemId, baseURL: serverBaseURL, payload: json, streamPath: "emby/Videos/\(itemId)/stream") else {
+        let startedAt = CFAbsoluteTimeGetCurrent()
+        SSDPService.shared.recordPlaybackDebug("EMBY_INFO request item=\(itemId) host=\(serverBaseURL.host ?? "unknown")")
+        let result: (Data, URLResponse)
+        do {
+            result = try await URLSession.shared.data(for: request)
+        } catch {
+            SSDPService.shared.recordPlaybackDebug("EMBY_INFO network_error item=\(itemId) error=\(error.localizedDescription)")
+            throw error
+        }
+        let (data, response) = result
+        guard let httpResponse = response as? HTTPURLResponse else {
+            SSDPService.shared.recordPlaybackDebug("EMBY_INFO invalid_response item=\(itemId) response_type=\(String(describing: type(of: response)))")
             throw MediaServerError.invalidResponse
         }
+        let elapsedMs = Int((CFAbsoluteTimeGetCurrent() - startedAt) * 1000)
+        let contentType = httpResponse.value(forHTTPHeaderField: "Content-Type") ?? "unknown"
+        SSDPService.shared.recordPlaybackDebug("EMBY_INFO response item=\(itemId) http=\(httpResponse.statusCode) bytes=\(data.count) type=\(contentType) elapsed_ms=\(elapsedMs)")
+        guard httpResponse.statusCode == 200 else {
+            throw MediaServerError.requestFailed(statusCode: httpResponse.statusCode)
+        }
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let info = MediaPlaybackInfoSelector.select(itemId: itemId, baseURL: serverBaseURL, payload: json, streamPath: "emby/Videos/\(itemId)/stream") else {
+            SSDPService.shared.recordPlaybackDebug("EMBY_INFO parse_failed item=\(itemId)")
+            throw MediaServerError.invalidResponse
+        }
+        SSDPService.shared.recordPlaybackDebug("EMBY_INFO sources item=\(itemId) \(playbackSourceSummary(json))")
+        let candidates = info.candidates.enumerated().map { index, candidate in
+            "#\(index + 1):\(candidate.method.rawValue):container=\(candidate.containerHint ?? "unknown"):url=\(SSDPService.sanitizedPlaybackURL(candidate.url))"
+        }.joined(separator: " | ")
+        SSDPService.shared.recordPlaybackDebug("EMBY_INFO candidates item=\(itemId) count=\(info.candidates.count) \(candidates)")
         return info
+    }
+
+    private func playbackSourceSummary(_ payload: [String: Any]) -> String {
+        guard let sources = payload["MediaSources"] as? [[String: Any]] else { return "none" }
+        return sources.enumerated().map { index, source in
+            let streams = source["MediaStreams"] as? [[String: Any]] ?? []
+            let video = streams.first { ($0["Type"] as? String)?.lowercased() == "video" }
+            let audio = streams.first { ($0["Type"] as? String)?.lowercased() == "audio" }
+            let width = video?["Width"].map(String.init(describing:)) ?? "?"
+            let height = video?["Height"].map(String.init(describing:)) ?? "?"
+            let bitDepth = video?["BitDepth"].map(String.init(describing:)) ?? "?"
+            let directPlay = source["SupportsDirectPlay"] as? Bool ?? false
+            let directStream = source["SupportsDirectStream"] as? Bool ?? false
+            let transcode = source["SupportsTranscoding"] as? Bool ?? false
+            return "#\(index + 1):container=\(source["Container"] as? String ?? "?"):video=\(video?["Codec"] as? String ?? source["VideoCodec"] as? String ?? "?"):profile=\(video?["Profile"] as? String ?? "?"):size=\(width)x\(height):depth=\(bitDepth):audio=\(audio?["Codec"] as? String ?? source["AudioCodec"] as? String ?? "?"):dp=\(directPlay):ds=\(directStream):tc=\(transcode)"
+        }.joined(separator: " | ")
     }
 
     public func reportPlaybackProgress(itemId: String, position: TimeInterval, isPaused: Bool, isStopped: Bool, playSessionId: String?, mediaSourceId: String?) async throws {

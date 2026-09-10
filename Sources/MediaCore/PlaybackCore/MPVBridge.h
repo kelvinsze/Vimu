@@ -1,0 +1,21 @@
+#import <Foundation/Foundation.h>
+
+typedef struct MivuMPV MivuMPV;
+
+MivuMPV *mivu_mpv_create(void);
+void mivu_mpv_destroy(MivuMPV *player);
+int mivu_mpv_is_initialized(MivuMPV *player);
+int mivu_mpv_load(MivuMPV *player, const char *url, const char *headers, double start_position);
+int mivu_mpv_stop(MivuMPV *player);
+int mivu_mpv_set_paused(MivuMPV *player, int paused);
+int mivu_mpv_seek(MivuMPV *player, double position);
+int mivu_mpv_set_rate(MivuMPV *player, double rate);
+int mivu_mpv_set_volume(MivuMPV *player, double volume);
+int mivu_mpv_set_muted(MivuMPV *player, int muted);
+int mivu_mpv_poll_event(MivuMPV *player, int *end_reason, int *end_error);
+int mivu_mpv_snapshot(MivuMPV *player, double *time, double *duration, int *paused);
+const char *mivu_mpv_last_error(MivuMPV *player);
+int mivu_mpv_attach_render(MivuMPV *player);
+int mivu_mpv_render(MivuMPV *player, int framebuffer, int width, int height);
+int mivu_mpv_set_subtitle_id(MivuMPV *player, int subtitle_id);
+int mivu_mpv_add_subtitle(MivuMPV *player, const char *url);

@@ -14,6 +14,8 @@ public struct ServerDetailView: View {
     @State private var isLoading = false
     @State private var errorMessage: String?
     @State private var isShowingPlayer = false
+    @State private var playbackResolveTask: Task<Void, Never>?
+    @State private var playbackResolveID: UUID?
 
     public init(serverInfo: SavedServerInfo) {
         self.serverInfo = serverInfo
@@ -183,11 +185,30 @@ public struct ServerDetailView: View {
 
     private func play(_ item: MediaItem) {
         guard let client = MediaServerManager.shared.getClient(for: serverInfo.id) else { return }
-        Task {
-            let resolved = (try? await client.resolvePlaybackItem(item)) ?? item
-            await MainActor.run {
-                playerService.loadAndPlay(item: resolved)
-                isShowingPlayer = true
+        playbackResolveTask?.cancel()
+        let resolveID = UUID()
+        playbackResolveID = resolveID
+        playbackResolveTask = Task {
+            do {
+                let resolved = try await client.resolvePlaybackItem(item)
+                guard !Task.isCancelled else { return }
+                await MainActor.run {
+                    guard playbackResolveID == resolveID else { return }
+                    playbackResolveTask = nil
+                    playbackResolveID = nil
+                    errorMessage = nil
+                    playerService.loadAndPlay(item: resolved)
+                    isShowingPlayer = true
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+                SSDPService.shared.recordPlaybackDebug("RESOLVE failed server=\(serverInfo.name) item=\(item.serverItemID ?? "unknown") error=\(error.localizedDescription)")
+                await MainActor.run {
+                    guard playbackResolveID == resolveID else { return }
+                    playbackResolveTask = nil
+                    playbackResolveID = nil
+                    errorMessage = error.localizedDescription
+                }
             }
         }
     }

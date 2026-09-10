@@ -2,11 +2,16 @@ import Foundation
 import OSLog
 import Security
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "MediaServerManager")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "MediaServerManager")
 
 public enum MediaServerType: String, Codable, Sendable, CaseIterable {
     case emby
     case jellyfin
+    case webDAV = "webdav"
+    case smb
+    /// fnOS is connected through its documented WebDAV endpoint. Its private
+    /// media-library API is deliberately not assumed to be stable.
+    case fnos
 }
 
 public struct MediaServerCredential: Codable, Sendable, Equatable {
@@ -28,7 +33,7 @@ public enum MediaServerCredentialMigration {
 }
 
 public enum KeychainTokenStore {
-    private static let service = "com.kold.vimu.media-server-token"
+    private static let service = "com.kold.mivu.media-server-token"
 
     @discardableResult
     public static func save(_ credential: MediaServerCredential, for serverID: UUID) -> Bool {
@@ -159,7 +164,7 @@ public struct SavedServerInfo: Identifiable, Codable, Equatable, Sendable {
 public final class MediaServerManager: ObservableObject {
     public static let shared = MediaServerManager()
 
-    private let storageKey = "vimu_saved_media_servers_v1"
+    private let storageKey = "mivu_saved_media_servers_v1"
     @Published public private(set) var savedServers: [SavedServerInfo] = []
     @Published public private(set) var activeClients: [UUID: MediaServerProtocol] = [:]
 
@@ -209,23 +214,45 @@ public final class MediaServerManager: ObservableObject {
     }
 
     private func instantiateClient(for info: SavedServerInfo) {
-        if info.serverType == .emby {
+        let credential = KeychainTokenStore.readCredential(for: info.id)
+        switch info.serverType {
+        case .emby:
             let client = EmbyClient(
                 id: info.id,
                 serverName: info.name,
                 serverBaseURL: info.url,
-                accessToken: KeychainTokenStore.readCredential(for: info.id)?.token,
-                userId: KeychainTokenStore.readCredential(for: info.id)?.userId
+                accessToken: credential?.token,
+                userId: credential?.userId
             )
             activeClients[info.id] = client
-        } else {
+        case .jellyfin:
             let client = JellyfinClient(
                 id: info.id,
                 serverName: info.name,
                 serverBaseURL: info.url,
-                accessToken: KeychainTokenStore.readCredential(for: info.id)?.token,
-                userId: KeychainTokenStore.readCredential(for: info.id)?.userId
+                accessToken: credential?.token,
+                userId: credential?.userId
             )
+            activeClients[info.id] = client
+        case .webDAV, .fnos:
+            activeClients[info.id] = WebDAVClient(
+                id: info.id,
+                serverName: info.name,
+                serverBaseURL: info.url,
+                username: info.username,
+                password: credential?.token
+            )
+        case .smb:
+            guard let client = try? SMBMediaClient(
+                id: info.id,
+                serverName: info.name,
+                serverBaseURL: info.url,
+                username: info.username,
+                password: credential?.token
+            ) else {
+                logger.error("Invalid SMB server URL for \(info.name)")
+                return
+            }
             activeClients[info.id] = client
         }
     }

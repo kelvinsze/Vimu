@@ -21,11 +21,7 @@ public struct PlayerView: View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // Native AVPlayer View with dynamic video gravity
-            CustomVideoPlayer(
-                player: playerService.player,
-                videoGravity: playerService.videoGravity
-            )
+            playbackSurface
             .ignoresSafeArea(edges: [.top, .bottom])
             .onTapGesture {
                 withAnimation(.easeInOut(duration: 0.25)) {
@@ -34,6 +30,11 @@ public struct PlayerView: View {
                 if isControlsVisible {
                     scheduleHideControls()
                 }
+            }
+
+            if playerService.session.status == .failed,
+               let errorMessage = playerService.session.errorMessage {
+                playbackErrorOverlay(errorMessage)
             }
 
             // Stream Diagnostics HUD Overlay
@@ -55,6 +56,46 @@ public struct PlayerView: View {
     }
 
     // MARK: - Overlays
+
+    @ViewBuilder
+    private var playbackSurface: some View {
+#if canImport(MPV)
+        if playerService.renderSurfaceKind == .mpvOpenGLES,
+           let engine = playerService.activeMPVEngine {
+            MPVVideoPlayerView(engine: engine)
+        } else {
+            CustomVideoPlayer(
+                player: playerService.player,
+                videoGravity: playerService.videoGravity
+            )
+        }
+#else
+        CustomVideoPlayer(
+            player: playerService.player,
+            videoGravity: playerService.videoGravity
+        )
+#endif
+    }
+
+    private func playbackErrorOverlay(_ message: String) -> some View {
+        VStack(spacing: 12) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 36))
+                .foregroundColor(.yellow)
+            Text("播放失败")
+                .font(.headline)
+                .foregroundColor(.white)
+            Text(message)
+                .font(.caption)
+                .foregroundColor(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .lineLimit(4)
+        }
+        .padding(24)
+        .background(Color.black.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .padding(32)
+    }
 
     private var controlsOverlay: some View {
         VStack(spacing: 0) {
@@ -108,17 +149,50 @@ public struct PlayerView: View {
                         .cornerRadius(6)
                 }
 
-                // Aspect Ratio Toggle
-                Button {
-                    playerService.toggleVideoGravity()
-                    scheduleHideControls()
+                Menu {
+                    Button {
+                        playerService.setSubtitleTrack(nil)
+                        scheduleHideControls()
+                    } label: {
+                        HStack { Text("关闭字幕"); if playerService.selectedSubtitleTrack == nil { Image(systemName: "checkmark") } }
+                    }
+                    if playerService.subtitleTracks.isEmpty {
+                        Text("暂无字幕轨道")
+                    } else {
+                        ForEach(playerService.subtitleTracks) { track in
+                            Button {
+                                playerService.setSubtitleTrack(track)
+                                scheduleHideControls()
+                            } label: {
+                                HStack {
+                                    Text(subtitleLabel(track))
+                                    if playerService.selectedSubtitleTrack?.id == track.id { Image(systemName: "checkmark") }
+                                }
+                            }
+                        }
+                    }
                 } label: {
-                    Image(systemName: playerService.videoGravity == .resizeAspect ? "arrow.up.left.and.arrow.down.right" : "arrow.down.right.and.arrow.up.left")
+                    Image(systemName: playerService.selectedSubtitleTrack == nil ? "captions.bubble" : "captions.bubble.fill")
                         .font(.body)
                         .foregroundColor(.white.opacity(0.9))
                         .padding(6)
                         .background(Color.white.opacity(0.2))
                         .clipShape(Circle())
+                }
+
+                if playerService.renderSurfaceKind != .mpvOpenGLES {
+                    // Aspect ratio and AirPlay are AVPlayer-only controls.
+                    Button {
+                        playerService.toggleVideoGravity()
+                        scheduleHideControls()
+                    } label: {
+                        Image(systemName: playerService.videoGravity == .resizeAspect ? "arrow.up.left.and.arrow.down.right" : "arrow.down.right.and.arrow.up.left")
+                            .font(.body)
+                            .foregroundColor(.white.opacity(0.9))
+                            .padding(6)
+                            .background(Color.white.opacity(0.2))
+                            .clipShape(Circle())
+                    }
                 }
 
                 // Diagnostics HUD Toggle
@@ -136,9 +210,11 @@ public struct PlayerView: View {
                         .clipShape(Circle())
                 }
 
-                // AirPlay Route Picker
-                AirPlayRoutePickerView()
-                    .frame(width: 36, height: 36)
+                if playerService.renderSurfaceKind != .mpvOpenGLES {
+                    // MPV's custom surface does not inherit AVPlayer external playback.
+                    AirPlayRoutePickerView()
+                        .frame(width: 36, height: 36)
+                }
             }
             .padding(.horizontal, 20)
             .padding(.top, 16)
@@ -279,9 +355,34 @@ public struct PlayerView: View {
             }
         }
     }
+
+    private func subtitleLabel(_ track: SubtitleTrack) -> String {
+        let base = track.title ?? track.language ?? "字幕 \(track.id)"
+        let flags = [track.isDefault ? "默认" : nil, track.isForced ? "强制" : nil].compactMap { $0 }
+        let capability = track.format == .pgs || track.format == .vobsub ? "图片" : track.format.rawValue.uppercased()
+        return flags.isEmpty ? "\(base) · \(capability)" : "\(base)（\(flags.joined(separator: "、"))）· \(capability)"
+    }
 }
 
 // MARK: - AVPlayer Layer Wrapper
+
+#if canImport(MPV)
+public struct MPVVideoPlayerView: UIViewRepresentable {
+    public let engine: MPVPlayerEngine
+
+    public init(engine: MPVPlayerEngine) {
+        self.engine = engine
+    }
+
+    public func makeUIView(context: Context) -> MPVOpenGLESView {
+        engine.makeSurfaceView() ?? MPVOpenGLESView(engine: engine)
+    }
+
+    public func updateUIView(_ view: MPVOpenGLESView, context: Context) {
+        view.engine = engine
+    }
+}
+#endif
 
 public struct CustomVideoPlayer: UIViewControllerRepresentable {
     public let player: AVPlayer

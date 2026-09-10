@@ -1,7 +1,7 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "JellyfinClient")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "JellyfinClient")
 
 /// Jellyfin API client conforming to MediaServerProtocol.
 public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
@@ -40,7 +40,7 @@ public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
 
         // Jellyfin client authorization header
-        let authHeader = "MediaBrowser Client=\"Vimu\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"0.1.0\""
+        let authHeader = "MediaBrowser Client=\"Mivu\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"0.1.0\""
         request.setValue(authHeader, forHTTPHeaderField: "X-Emby-Authorization")
 
         let body: [String: String] = ["Username": username, "Pw": password]
@@ -133,7 +133,7 @@ public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
         guard let id = dict["Id"] as? String, let name = dict["Name"] as? String else { return nil }
         let duration = ((dict["RunTimeTicks"] as? Double) ?? 0) / 10_000_000
         let playback = MediaPlaybackInfoSelector.select(itemId: id, baseURL: serverBaseURL, payload: dict, streamPath: "Videos/\(id)/stream")
-        return MediaItem(title: name, url: playback?.url ?? serverBaseURL.appendingPathComponent("Videos/\(id)/stream.mp4"), sourceType: .personalMedia, mimeType: "video/mp4", duration: duration > 0 ? duration : nil, headers: authorizationHeaders(), originator: serverName, serverID: serverId, serverItemID: id, playSessionID: playback?.playSessionId, mediaSourceID: playback?.mediaSourceId, resumePosition: playback?.resumePosition ?? (((dict["UserData"] as? [String: Any])?["PlaybackPositionTicks"] as? Double ?? 0) / 10_000_000))
+        return MediaItem(title: name, url: playback?.url ?? serverBaseURL.appendingPathComponent("Videos/\(id)/stream.mp4"), sourceType: .personalMedia, mimeType: "video/mp4", duration: duration > 0 ? duration : nil, headers: authorizationHeaders(), originator: serverName, serverID: serverId, serverItemID: id, playSessionID: playback?.playSessionId, mediaSourceID: playback?.mediaSourceId, resumePosition: playback?.resumePosition ?? (((dict["UserData"] as? [String: Any])?["PlaybackPositionTicks"] as? Double ?? 0) / 10_000_000), subtitleTracks: playback?.subtitleTracks)
     }
 
     public func fetchPlaybackInfo(itemId: String) async throws -> MediaPlaybackInfo {
@@ -195,7 +195,7 @@ public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
 
     private func authorizationHeaders() -> [String: String] {
         var headers = [
-            "X-Emby-Authorization": "MediaBrowser Client=\"Vimu\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"0.1.0\""
+            "X-Emby-Authorization": "MediaBrowser Client=\"Mivu\", Device=\"iPhone\", DeviceId=\"\(UPnPDevice.shared.uuid)\", Version=\"0.1.0\""
         ]
         if let token = accessToken {
             headers["X-Emby-Token"] = token
