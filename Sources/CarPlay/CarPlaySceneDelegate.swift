@@ -16,7 +16,6 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
     private var isPresentingRootTemplate = false
     private var needsRootTemplateRefresh = false
     private var shouldPresentIncomingPlayback = false
-    private var isIncomingPlaybackPresented = false
 
     @Published public private(set) var isConnected: Bool = false
     @Published public private(set) var isVideoPlaybackAvailable: Bool = false
@@ -55,13 +54,6 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 guard let self else { return }
-                let session = PlayerService.shared.session
-                if self.isIncomingPlaybackPresented,
-                   session.currentItem?.sourceType == .dlna,
-                   session.status == .loading || session.status == .playing || session.status == .paused {
-                    return
-                }
-                self.isIncomingPlaybackPresented = false
                 self.refreshCarPlayUI()
             }
             .store(in: &self.cancellables)
@@ -75,7 +67,6 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
         self.isPresentingRootTemplate = false
         self.needsRootTemplateRefresh = false
         self.shouldPresentIncomingPlayback = false
-        self.isIncomingPlaybackPresented = false
         cancellables.removeAll()
     }
 
@@ -100,7 +91,7 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
     private func refreshCarPlayUI() {
         guard let interfaceController = interfaceController else { return }
         if PlayerService.shared.session.currentItem?.sourceType == .dlna {
-            SSDPService.shared.recordCastDebug("CARPLAY refreshRoot busy=\(isPresentingRootTemplate) playbackPresented=\(isIncomingPlaybackPresented)")
+            SSDPService.shared.recordCastDebug("CARPLAY refreshRoot busy=\(isPresentingRootTemplate) incoming=\(shouldPresentIncomingPlayback)")
         }
 
         guard !isPresentingRootTemplate else {
@@ -137,11 +128,12 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
         }
     }
 
-    /// A DLNA sender does not select the CarPlay list item, so explicitly move
-    /// CarPlay to its public Now Playing surface after refreshing that item.
+    /// A DLNA sender does not select the CarPlay list item. Refresh the root
+    /// list so the user can select its video-configured playback item; pushing
+    /// Now Playing alone only exposes controls and never starts video
+    /// presentation.
     public func presentIncomingPlayback() {
         shouldPresentIncomingPlayback = true
-        isIncomingPlaybackPresented = false
         guard interfaceController != nil else {
             SSDPService.shared.recordPlaybackStage("等待 CarPlay 连接")
             return
@@ -152,27 +144,12 @@ public final class CarPlaySceneDelegate: UIResponder, CPTemplateApplicationScene
     }
 
     private func presentPendingIncomingPlayback() {
-        guard shouldPresentIncomingPlayback, let interfaceController else { return }
+        guard shouldPresentIncomingPlayback, interfaceController != nil else { return }
         shouldPresentIncomingPlayback = false
 
-        let nowPlayingTemplate = CPNowPlayingTemplate.shared
-        guard !interfaceController.templates.contains(where: { $0 === nowPlayingTemplate }) else {
-            isIncomingPlaybackPresented = true
-            SSDPService.shared.recordPlaybackStage("CarPlay 正在播放页")
-            return
-        }
-
-        interfaceController.pushTemplate(nowPlayingTemplate, animated: true) { success, error in
-            if success {
-                self.isIncomingPlaybackPresented = true
-                logger.info("Incoming cast presented on CarPlay Now Playing.")
-                SSDPService.shared.recordPlaybackStage("CarPlay 播放页已呈现")
-            } else {
-                let message = error?.localizedDescription ?? "unknown error"
-                logger.error("Failed to present incoming cast on CarPlay: \(message, privacy: .public)")
-                SSDPService.shared.recordPlaybackStage("CarPlay 呈现失败：\(message)")
-            }
-        }
+        let capability = isVideoPlaybackAvailable ? "车机支持视频" : "车机未报告视频能力或当前策略受限"
+        logger.info("Incoming cast is ready for CarPlay video selection.")
+        SSDPService.shared.recordPlaybackStage("CarPlay 已显示可选视频条目（\(capability)）")
     }
 
     private func presentInitialRootTemplate(using interfaceController: CPInterfaceController) {
