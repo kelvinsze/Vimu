@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Vimu</string>
+	<string>Mivu</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -20,12 +20,14 @@
 	<string>0.1.0</string>
 	<key>CFBundleVersion</key>
 	<string>1</string>
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	
 	<!-- Local Network Privacy Description -->
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>Vimu uses your local network to discover media servers and receive video casting requests from devices and apps on your network.</string>
+	<string>Mivu uses your local network to discover media servers and receive video casting requests from devices and apps on your network.</string>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_upnp._tcp</string>
@@ -49,10 +51,10 @@
 	<array>
 		<dict>
 			<key>CFBundleURLName</key>
-			<string>com.kold.vimu</string>
+			<string>com.kold.mivu</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>vimu</string>
+				<string>mivu</string>
 			</array>
 		</dict>
 	</array>
@@ -76,10 +78,23 @@
 			<key>CPTemplateApplicationSceneSessionRoleApplication</key>
 			<array>
 				<dict>
+					<key>UISceneClassName</key>
+					<string>CPTemplateApplicationScene</string>
 					<key>UISceneConfigurationName</key>
 					<string>CarPlay Configuration</string>
 					<key>UISceneDelegateClassName</key>
 					<string>$(PRODUCT_MODULE_NAME).CarPlaySceneDelegate</string>
+				</dict>
+			</array>
+			<key>UIWindowSceneSessionRoleCarPlay</key>
+			<array>
+				<dict>
+					<key>UISceneClassName</key>
+					<string>UIWindowScene</string>
+					<key>UISceneConfigurationName</key>
+					<string>CarPlay Window Configuration</string>
+					<key>UISceneDelegateClassName</key>
+					<string>$(PRODUCT_MODULE_NAME).PhoneSceneDelegate</string>
 				</dict>
 			</array>
 		</dict>

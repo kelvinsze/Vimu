@@ -1,21 +1,21 @@
-# Privacy Policy for Vimu
+# Privacy Policy for Mivu
 
 *Effective Date: August 20, 2026*
 
-Vimu ("we", "our", or "the app") is committed to respecting and protecting your privacy. This Privacy Policy explains how Vimu operates regarding data collection, transmission, and local network usage.
+Mivu ("we", "our", or "the app") is committed to respecting and protecting your privacy. This Privacy Policy explains how Mivu operates regarding data collection, transmission, and local network usage.
 
 ---
 
 ### 1. Zero Data Collection
-Vimu is designed with privacy at its core:
+Mivu is designed with privacy at its core:
 - **No Personal Data Collection:** We do not collect, store, or transmit your personal identifiable information (PII), device identifiers, or contact details.
-- **No Analytics / Telemetry:** Vimu does not integrate third-party tracking SDKs, analytics services, or advertising frameworks.
-- **No Account Required:** You can use all features of Vimu without registering an account or providing an email address.
+- **No Analytics / Telemetry:** Mivu does not integrate third-party tracking SDKs, analytics services, or advertising frameworks.
+- **No Account Required:** You can use all features of Mivu without registering an account or providing an email address.
 
 ---
 
 ### 2. Local Network Usage
-Vimu requests access to your **Local Network** (`NSLocalNetworkUsageDescription`) strictly for the following purposes:
+Mivu requests access to your **Local Network** (`NSLocalNetworkUsageDescription`) strictly for the following purposes:
 - **Device Discovery & Casting:** To listen for and respond to UPnP/DLNA casting requests initiated by other media applications on your local Wi-Fi network.
 - **Media Streaming:** To receive video URLs and stream media content directly across your local network from your personal media devices or user-entered endpoints.
 - **Multicast Discovery:** Standard UPnP/DLNA protocols utilize UDP multicast (`239.255.255.250:1900`) for SSDP discovery solely within your local area network.
@@ -25,20 +25,20 @@ Local network communication remains entirely within your local Wi-Fi / LAN envir
 ---
 
 ### 3. Media Content & Playback
-- Video streams and URLs played through Vimu are accessed directly from the provided source or server.
+- Video streams and URLs played through Mivu are accessed directly from the provided source or server.
 - Playback history is stored locally on your device using on-device storage and is never uploaded to external servers.
 
 ---
 
 ### 4. CarPlay Compliance
 When connected to Apple CarPlay:
-- Vimu strictly obeys CarPlay system state and driving safety regulations.
+- Mivu strictly obeys CarPlay system state and driving safety regulations.
 - Video playback is rendered only when allowed by the vehicle operating system (e.g. while parked).
-- Vimu does not collect vehicle telemetry or driver behavioral data.
+- Mivu does not collect vehicle telemetry or driver behavioral data.
 
 ---
 
 ### 5. Contact Us
-If you have any questions or feedback regarding this Privacy Policy or Vimu's privacy practices, please contact us at:
-- **Email:** support@vimu.app (or your developer email)
-- **Repository:** https://github.com/kelvinsze/Vimu
+If you have any questions or feedback regarding this Privacy Policy or Mivu's privacy practices, please contact us at:
+- **Email:** support@mivu.app (or your developer email)
+- **Repository:** https://github.com/kelvinsze/Mivu

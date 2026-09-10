@@ -1,4 +1,4 @@
-name: Vimu
+name: Mivu
 options:
   bundleIdPrefix: com.kold
   deploymentTarget:
@@ -10,20 +10,30 @@ settings:
     SWIFT_VERSION: "5.0"
     DEVELOPMENT_TEAM: VFB889K3T3
 
+packages:
+  SMBClient:
+    url: https://github.com/kishikawakatsumi/SMBClient.git
+    from: 0.1.0
+
 targets:
-  Vimu:
+  Mivu:
     type: application
     platform: iOS
     deploymentTarget: "17.0"
     sources:
       - path: Sources
     entitlements:
-      path: Vimu.entitlements
+      path: Mivu.entitlements
+    dependencies:
+      - framework: Frameworks/MPV/libmpv.xcframework
+        embed: false
+      - package: SMBClient
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.kold.vimu
-        PRODUCT_NAME: Vimu
-        PRODUCT_MODULE_NAME: Vimu
+        CLANG_WARN_DOCUMENTATION_COMMENTS: NO
+        PRODUCT_BUNDLE_IDENTIFIER: com.kold.mivu
+        PRODUCT_NAME: Mivu
+        PRODUCT_MODULE_NAME: Mivu
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: 1
@@ -34,30 +44,67 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         CODE_SIGN_STYLE: Automatic
         DEVELOPMENT_TEAM: VFB889K3T3
+        GCC_PREPROCESSOR_DEFINITIONS:
+          - "$(inherited)"
+          - GLES_SILENCE_DEPRECATION=1
+        FRAMEWORK_SEARCH_PATHS: "$(inherited) $(PROJECT_DIR)/Frameworks/MPV"
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
+        OTHER_SWIFT_FLAGS:
+          - "$(inherited)"
+          - "-Xcc"
+          - "-DGLES_SILENCE_DEPRECATION=1"
+        OTHER_LDFLAGS:
+          - "$(inherited)"
+          - "-framework"
+          - AVFoundation
+          - "-framework"
+          - AudioToolbox
+          - "-framework"
+          - CoreFoundation
+          - "-framework"
+          - CoreMedia
+          - "-framework"
+          - CoreText
+          - "-framework"
+          - CoreVideo
+          - "-framework"
+          - Security
+          - "-framework"
+          - OpenGLES
+          - "-framework"
+          - VideoToolbox
+          - "-framework"
+          - QuartzCore
+          - "-framework"
+          - Metal
+          - "-lz"
+          - "-liconv"
+          - "-lc++"
 
-  VimuTests:
+  MivuTests:
     type: bundle.unit-test
     platform: iOS
     deploymentTarget: "17.0"
     sources:
       - path: Tests
     dependencies:
-      - target: Vimu
+      - target: Mivu
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.kold.vimu.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.kold.mivu.tests
         SWIFT_VERSION: "5.0"
+        "EXCLUDED_ARCHS[sdk=iphonesimulator*]": x86_64
         GENERATE_INFOPLIST_FILE: YES
-        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Vimu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Vimu
+        TEST_HOST: $(BUILT_PRODUCTS_DIR)/Mivu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Mivu
         BUNDLE_LOADER: $(TEST_HOST)
         DEVELOPMENT_TEAM: VFB889K3T3
 
 schemes:
-  Vimu:
+  Mivu:
     build:
       targets:
-        Vimu: all
-        VimuTests: [test]
+        Mivu: all
+        MivuTests: [test]
     test:
       targets:
-        - VimuTests
+        - MivuTests

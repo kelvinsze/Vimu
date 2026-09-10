@@ -1,0 +1,813 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		045F69FE04C1D5D3D42529B6 /* JellyfinClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D8DAD3E2C5CA2A845F13D1E /* JellyfinClient.swift */; };
+		194909F284E366D6F4F5174E /* SMBLocalHTTPProxy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 56CD08DA8D5885F2C3A66F21 /* SMBLocalHTTPProxy.swift */; };
+		1A176E5815F1E36B584945EA /* CarPlayTemplateBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE7D754488AB5B9AEEDBFE4D /* CarPlayTemplateBuilder.swift */; };
+		2159A6440C0C14A47A3CE4EB /* MPVPlayerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 723940D1AE88CF92874CC8B0 /* MPVPlayerEngine.swift */; };
+		26867796F56D7F76F12BC6FD /* EmbyClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC89402D263C56BE648A062A /* EmbyClient.swift */; };
+		273D43254AF1B78F73D50C9C /* AVPlayerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC90A7E0F61FF392B8796615 /* AVPlayerEngine.swift */; };
+		2F55EEC28DAB8991C92947B3 /* PlayerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = E308EDFF7E3D8D5060751D6F /* PlayerView.swift */; };
+		360783D98894D9018D8F4F31 /* UPnPDevice.swift in Sources */ = {isa = PBXBuildFile; fileRef = 18EF5AAF3D3D0692C051180B /* UPnPDevice.swift */; };
+		3B0C3F58792CD6E3A802DB28 /* PhoneSceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 11EB3F07520AF133D3A25B6A /* PhoneSceneDelegate.swift */; };
+		3FB53F5CC4296D466EF92E09 /* MivuApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1255C4ABB3088512F3C8BDEC /* MivuApp.swift */; };
+		46C79B1C0251D09C85459E0D /* PlaybackRouter.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF0AAC7AA4CE0E40B63D26F2 /* PlaybackRouter.swift */; };
+		46C7F8F5470B4213D2EA45A7 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = F2C1A2C1479CAA66881A6286 /* SettingsView.swift */; };
+		4F34AE11601F64CEEF07191A /* SOAPParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = D927BAD78CBBFFFD3F9DEAE5 /* SOAPParser.swift */; };
+		56DFD7DD123D2B09622A605F /* SMBAssetResourceLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 755202B4282F1F1C47E8546F /* SMBAssetResourceLoader.swift */; };
+		6A2D64379E2FC927C6B673A8 /* MainTabView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEBD723FDFD184AD9E7AA0A9 /* MainTabView.swift */; };
+		6DA8B04D20CF864E63C61919 /* SSDPService.swift in Sources */ = {isa = PBXBuildFile; fileRef = DADE3606E944B2EE920D9C0F /* SSDPService.swift */; };
+		79B77AFA7C2F558E76160A9D /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9F68133D47D1518BB634A92 /* HomeView.swift */; };
+		7AB58271875F8BCE9D37B5C2 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = E53F2115543AC50B694798D8 /* LaunchScreen.storyboard */; };
+		80EC3F592A55DA87F2ED17A3 /* SMBClient in Frameworks */ = {isa = PBXBuildFile; productRef = 363E3E41D8FA4FEF8929AEBC /* SMBClient */; };
+		829E174F11B73D464CF0D67F /* PlaybackCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D673EA9A7EAE22D49590863E /* PlaybackCoreTests.swift */; };
+		881C15192991FD645B647B33 /* WebDAVClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = C48F0DA8AF7F12BB7CA1570C /* WebDAVClient.swift */; };
+		8EF95EFA7831B6805B7B6C91 /* MPVBridge.m in Sources */ = {isa = PBXBuildFile; fileRef = 235BB513C85D77EB590C7A38 /* MPVBridge.m */; };
+		9B60D72C6FC2BCC55F630677 /* DiagnosticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9C889A778633FF9D4D7590B /* DiagnosticsView.swift */; };
+		9E780E2BAF1106905E539A6B /* ServersView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B35711D9836A29F122885BE7 /* ServersView.swift */; };
+		A2A01B3586F3FB9FD6810727 /* DLNASource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 47BCF5BC8AFED357491270F9 /* DLNASource.swift */; };
+		AD08CA0D31BC8A304A7D3143 /* libmpv.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = 69D821A8E48FA5536B51DD0D /* libmpv.xcframework */; };
+		AEF10D0C9CEF889B7E517B57 /* PlaybackSession.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57BFC9747064979AFA051932 /* PlaybackSession.swift */; };
+		B0945693970E7A899C740CC0 /* CarPlaySceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C8A64FA60D3B38DB93DFA095 /* CarPlaySceneDelegate.swift */; };
+		B719C340B92D16CB95A5DCCF /* MediaItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A0D166AEE34812DFDF14EA3 /* MediaItem.swift */; };
+		BCFC1C93222AD2E764BB2BDA /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 9D95DEE150C0992DAC39C04E /* Assets.xcassets */; };
+		BDAA1CA065A53D5C9F848B9D /* PlaybackHistory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042A4A51D1B57A2966D6DC60 /* PlaybackHistory.swift */; };
+		C2366BC1D139429CE9C15ACC /* MediaServerProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 135C58AAB571C7251CA0CF26 /* MediaServerProtocol.swift */; };
+		CB8EDFDDAA48CE6C63C50D90 /* PlayerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28D62DF33021F9BF985B2DDB /* PlayerService.swift */; };
+		CBC155672B840A6EAE8D3A79 /* AVTransportService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 78C4E68D964B70B61CE98789 /* AVTransportService.swift */; };
+		D4EED6F5E9F4C0494F77577D /* SMBMediaClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5C8DA8A948A8C67371826710 /* SMBMediaClient.swift */; };
+		D9E4FDFB053D897F9E01791A /* CarPlayVideoPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC2F70DD8884B2AAD1077E2D /* CarPlayVideoPresentation.swift */; };
+		DDCF58BCEF8762CF98D527E9 /* SOAPParserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B4257C4863B2449DDC203A2 /* SOAPParserTests.swift */; };
+		DDD8EAAADA25B10C23E966D0 /* ServerDetailView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 29C7638366F3FE4BBC890C64 /* ServerDetailView.swift */; };
+		E00B02082CD4C101A335DB09 /* URLSource.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27D1BF82DE8B1D7EBD86A6FE /* URLSource.swift */; };
+		E371939A401C14575BA6406B /* ReceiverStatusView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D90DE5A69B57FC399065E0D /* ReceiverStatusView.swift */; };
+		E7E61F750F050CCA6BEC3646 /* MediaServerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79DE2826965C1D69602443EC /* MediaServerManager.swift */; };
+		EC250640A449F4A5958CEAB0 /* PlayerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0CC6CD7A95C4A23C37ECBCD /* PlayerEngine.swift */; };
+		F7421C7D6A6F35E9A47A70CC /* HTTPServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = DCA2351A1444F82B795E7A15 /* HTTPServer.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		BB9F61AF102120EF1F3CC22C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A3AFAEEC52BE3C0C17BD7481 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 330EF52C47556D962A9B43BD;
+			remoteInfo = Mivu;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		042A4A51D1B57A2966D6DC60 /* PlaybackHistory.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackHistory.swift; sourceTree = "<group>"; };
+		11EB3F07520AF133D3A25B6A /* PhoneSceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSceneDelegate.swift; sourceTree = "<group>"; };
+		1255C4ABB3088512F3C8BDEC /* MivuApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MivuApp.swift; sourceTree = "<group>"; };
+		135C58AAB571C7251CA0CF26 /* MediaServerProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaServerProtocol.swift; sourceTree = "<group>"; };
+		18EF5AAF3D3D0692C051180B /* UPnPDevice.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UPnPDevice.swift; sourceTree = "<group>"; };
+		1E720BA21B0E1EAEE35FC5C8 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		235BB513C85D77EB590C7A38 /* MPVBridge.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = MPVBridge.m; sourceTree = "<group>"; };
+		2659BC7F2CF719BC16457DE0 /* MivuTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = MivuTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		27D1BF82DE8B1D7EBD86A6FE /* URLSource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = URLSource.swift; sourceTree = "<group>"; };
+		28D62DF33021F9BF985B2DDB /* PlayerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerService.swift; sourceTree = "<group>"; };
+		29C7638366F3FE4BBC890C64 /* ServerDetailView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServerDetailView.swift; sourceTree = "<group>"; };
+		2BFD4272CC2791F07C2BED39 /* Mivu.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = Mivu.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		2D8DAD3E2C5CA2A845F13D1E /* JellyfinClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JellyfinClient.swift; sourceTree = "<group>"; };
+		3D90DE5A69B57FC399065E0D /* ReceiverStatusView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReceiverStatusView.swift; sourceTree = "<group>"; };
+		47BCF5BC8AFED357491270F9 /* DLNASource.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DLNASource.swift; sourceTree = "<group>"; };
+		56CD08DA8D5885F2C3A66F21 /* SMBLocalHTTPProxy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMBLocalHTTPProxy.swift; sourceTree = "<group>"; };
+		57BFC9747064979AFA051932 /* PlaybackSession.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackSession.swift; sourceTree = "<group>"; };
+		5C8DA8A948A8C67371826710 /* SMBMediaClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMBMediaClient.swift; sourceTree = "<group>"; };
+		69D821A8E48FA5536B51DD0D /* libmpv.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = libmpv.xcframework; path = Frameworks/MPV/libmpv.xcframework; sourceTree = "<group>"; };
+		723940D1AE88CF92874CC8B0 /* MPVPlayerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MPVPlayerEngine.swift; sourceTree = "<group>"; };
+		755202B4282F1F1C47E8546F /* SMBAssetResourceLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SMBAssetResourceLoader.swift; sourceTree = "<group>"; };
+		78C4E68D964B70B61CE98789 /* AVTransportService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVTransportService.swift; sourceTree = "<group>"; };
+		79DE2826965C1D69602443EC /* MediaServerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaServerManager.swift; sourceTree = "<group>"; };
+		8A0D166AEE34812DFDF14EA3 /* MediaItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaItem.swift; sourceTree = "<group>"; };
+		9B4257C4863B2449DDC203A2 /* SOAPParserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOAPParserTests.swift; sourceTree = "<group>"; };
+		9D95DEE150C0992DAC39C04E /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A6BC2202DD3AEDC5445B648E /* MPVBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MPVBridge.h; sourceTree = "<group>"; };
+		A9F68133D47D1518BB634A92 /* HomeView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		AC2F70DD8884B2AAD1077E2D /* CarPlayVideoPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayVideoPresentation.swift; sourceTree = "<group>"; };
+		B35711D9836A29F122885BE7 /* ServersView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ServersView.swift; sourceTree = "<group>"; };
+		BE7D754488AB5B9AEEDBFE4D /* CarPlayTemplateBuilder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlayTemplateBuilder.swift; sourceTree = "<group>"; };
+		C0CC6CD7A95C4A23C37ECBCD /* PlayerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerEngine.swift; sourceTree = "<group>"; };
+		C48F0DA8AF7F12BB7CA1570C /* WebDAVClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WebDAVClient.swift; sourceTree = "<group>"; };
+		C8A64FA60D3B38DB93DFA095 /* CarPlaySceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CarPlaySceneDelegate.swift; sourceTree = "<group>"; };
+		C9C889A778633FF9D4D7590B /* DiagnosticsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiagnosticsView.swift; sourceTree = "<group>"; };
+		CEBD723FDFD184AD9E7AA0A9 /* MainTabView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainTabView.swift; sourceTree = "<group>"; };
+		D673EA9A7EAE22D49590863E /* PlaybackCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackCoreTests.swift; sourceTree = "<group>"; };
+		D927BAD78CBBFFFD3F9DEAE5 /* SOAPParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SOAPParser.swift; sourceTree = "<group>"; };
+		DADE3606E944B2EE920D9C0F /* SSDPService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SSDPService.swift; sourceTree = "<group>"; };
+		DC89402D263C56BE648A062A /* EmbyClient.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmbyClient.swift; sourceTree = "<group>"; };
+		DC90A7E0F61FF392B8796615 /* AVPlayerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AVPlayerEngine.swift; sourceTree = "<group>"; };
+		DCA2351A1444F82B795E7A15 /* HTTPServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HTTPServer.swift; sourceTree = "<group>"; };
+		DF0AAC7AA4CE0E40B63D26F2 /* PlaybackRouter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlaybackRouter.swift; sourceTree = "<group>"; };
+		E308EDFF7E3D8D5060751D6F /* PlayerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PlayerView.swift; sourceTree = "<group>"; };
+		E53F2115543AC50B694798D8 /* LaunchScreen.storyboard */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; path = LaunchScreen.storyboard; sourceTree = "<group>"; };
+		F2C1A2C1479CAA66881A6286 /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		DEEC08FB464191B94B3061C3 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				AD08CA0D31BC8A304A7D3143 /* libmpv.xcframework in Frameworks */,
+				80EC3F592A55DA87F2ED17A3 /* SMBClient in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		06E37634A079FC50FFFFFF13 /* MediaCore */ = {
+			isa = PBXGroup;
+			children = (
+				8A0D166AEE34812DFDF14EA3 /* MediaItem.swift */,
+				042A4A51D1B57A2966D6DC60 /* PlaybackHistory.swift */,
+				57BFC9747064979AFA051932 /* PlaybackSession.swift */,
+				28D62DF33021F9BF985B2DDB /* PlayerService.swift */,
+				DE7B974ACBA0E0CB57319590 /* PlaybackCore */,
+			);
+			path = MediaCore;
+			sourceTree = "<group>";
+		};
+		159534E756885EA7C191C432 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				2BFD4272CC2791F07C2BED39 /* Mivu.app */,
+				2659BC7F2CF719BC16457DE0 /* MivuTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		2328E40E05568368649FAEB4 /* Receiver */ = {
+			isa = PBXGroup;
+			children = (
+				78C4E68D964B70B61CE98789 /* AVTransportService.swift */,
+				DCA2351A1444F82B795E7A15 /* HTTPServer.swift */,
+				D927BAD78CBBFFFD3F9DEAE5 /* SOAPParser.swift */,
+				DADE3606E944B2EE920D9C0F /* SSDPService.swift */,
+				18EF5AAF3D3D0692C051180B /* UPnPDevice.swift */,
+			);
+			path = Receiver;
+			sourceTree = "<group>";
+		};
+		3528497730C1459BA74AB0E6 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				9D95DEE150C0992DAC39C04E /* Assets.xcassets */,
+				1E720BA21B0E1EAEE35FC5C8 /* Info.plist */,
+				7D69B45A2B95AF6D83443AC5 /* Application */,
+				EA38266F5A58FFF7EBB43F90 /* CarPlay */,
+				99A8B31E00D8B6492CDBEB01 /* Diagnostics */,
+				C088451DE5E7575BCD34A2F8 /* iPhone */,
+				06E37634A079FC50FFFFFF13 /* MediaCore */,
+				2328E40E05568368649FAEB4 /* Receiver */,
+				D640679E739AC4293CF30152 /* Resources */,
+				E6609038D5283C2121324DDF /* Sources */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		53E726CFC7F359E7CEB1DE2F = {
+			isa = PBXGroup;
+			children = (
+				3528497730C1459BA74AB0E6 /* Sources */,
+				A7DEEDB84D78AB463900A18C /* Tests */,
+				AFC4C5B199D6AE11087B4A64 /* Frameworks */,
+				159534E756885EA7C191C432 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		7D69B45A2B95AF6D83443AC5 /* Application */ = {
+			isa = PBXGroup;
+			children = (
+				1255C4ABB3088512F3C8BDEC /* MivuApp.swift */,
+				11EB3F07520AF133D3A25B6A /* PhoneSceneDelegate.swift */,
+			);
+			path = Application;
+			sourceTree = "<group>";
+		};
+		99A8B31E00D8B6492CDBEB01 /* Diagnostics */ = {
+			isa = PBXGroup;
+			children = (
+				C9C889A778633FF9D4D7590B /* DiagnosticsView.swift */,
+			);
+			path = Diagnostics;
+			sourceTree = "<group>";
+		};
+		A7DEEDB84D78AB463900A18C /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				D673EA9A7EAE22D49590863E /* PlaybackCoreTests.swift */,
+				9B4257C4863B2449DDC203A2 /* SOAPParserTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		AFC4C5B199D6AE11087B4A64 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				69D821A8E48FA5536B51DD0D /* libmpv.xcframework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		C088451DE5E7575BCD34A2F8 /* iPhone */ = {
+			isa = PBXGroup;
+			children = (
+				FD9EF9D06FA181DE3DBE1BEE /* Views */,
+			);
+			path = iPhone;
+			sourceTree = "<group>";
+		};
+		D640679E739AC4293CF30152 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				E53F2115543AC50B694798D8 /* LaunchScreen.storyboard */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		DE7B974ACBA0E0CB57319590 /* PlaybackCore */ = {
+			isa = PBXGroup;
+			children = (
+				DC90A7E0F61FF392B8796615 /* AVPlayerEngine.swift */,
+				A6BC2202DD3AEDC5445B648E /* MPVBridge.h */,
+				235BB513C85D77EB590C7A38 /* MPVBridge.m */,
+				723940D1AE88CF92874CC8B0 /* MPVPlayerEngine.swift */,
+				DF0AAC7AA4CE0E40B63D26F2 /* PlaybackRouter.swift */,
+				C0CC6CD7A95C4A23C37ECBCD /* PlayerEngine.swift */,
+				755202B4282F1F1C47E8546F /* SMBAssetResourceLoader.swift */,
+				56CD08DA8D5885F2C3A66F21 /* SMBLocalHTTPProxy.swift */,
+			);
+			path = PlaybackCore;
+			sourceTree = "<group>";
+		};
+		E6609038D5283C2121324DDF /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				47BCF5BC8AFED357491270F9 /* DLNASource.swift */,
+				27D1BF82DE8B1D7EBD86A6FE /* URLSource.swift */,
+				F1C22F9868AD24080814FF51 /* PersonalMedia */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		EA38266F5A58FFF7EBB43F90 /* CarPlay */ = {
+			isa = PBXGroup;
+			children = (
+				C8A64FA60D3B38DB93DFA095 /* CarPlaySceneDelegate.swift */,
+				BE7D754488AB5B9AEEDBFE4D /* CarPlayTemplateBuilder.swift */,
+				AC2F70DD8884B2AAD1077E2D /* CarPlayVideoPresentation.swift */,
+			);
+			path = CarPlay;
+			sourceTree = "<group>";
+		};
+		F1C22F9868AD24080814FF51 /* PersonalMedia */ = {
+			isa = PBXGroup;
+			children = (
+				DC89402D263C56BE648A062A /* EmbyClient.swift */,
+				2D8DAD3E2C5CA2A845F13D1E /* JellyfinClient.swift */,
+				79DE2826965C1D69602443EC /* MediaServerManager.swift */,
+				135C58AAB571C7251CA0CF26 /* MediaServerProtocol.swift */,
+				5C8DA8A948A8C67371826710 /* SMBMediaClient.swift */,
+				C48F0DA8AF7F12BB7CA1570C /* WebDAVClient.swift */,
+			);
+			path = PersonalMedia;
+			sourceTree = "<group>";
+		};
+		FD9EF9D06FA181DE3DBE1BEE /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A9F68133D47D1518BB634A92 /* HomeView.swift */,
+				CEBD723FDFD184AD9E7AA0A9 /* MainTabView.swift */,
+				E308EDFF7E3D8D5060751D6F /* PlayerView.swift */,
+				3D90DE5A69B57FC399065E0D /* ReceiverStatusView.swift */,
+				29C7638366F3FE4BBC890C64 /* ServerDetailView.swift */,
+				B35711D9836A29F122885BE7 /* ServersView.swift */,
+				F2C1A2C1479CAA66881A6286 /* SettingsView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		330EF52C47556D962A9B43BD /* Mivu */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 248E5A4F3F85F7D04C2212F1 /* Build configuration list for PBXNativeTarget "Mivu" */;
+			buildPhases = (
+				E8344F4B2044EBEEAC3E436B /* Sources */,
+				ED1230FDDA36B62D5AD9DC8B /* Resources */,
+				DEEC08FB464191B94B3061C3 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Mivu;
+			packageProductDependencies = (
+				363E3E41D8FA4FEF8929AEBC /* SMBClient */,
+			);
+			productName = Mivu;
+			productReference = 2BFD4272CC2791F07C2BED39 /* Mivu.app */;
+			productType = "com.apple.product-type.application";
+		};
+		7D19BA1235946C36763C252B /* MivuTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1FDFF21213D48B9088395EA9 /* Build configuration list for PBXNativeTarget "MivuTests" */;
+			buildPhases = (
+				874B8D68665007778A64D3CD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				82DCA933A1A92884FA9B4C56 /* PBXTargetDependency */,
+			);
+			name = MivuTests;
+			packageProductDependencies = (
+			);
+			productName = MivuTests;
+			productReference = 2659BC7F2CF719BC16457DE0 /* MivuTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A3AFAEEC52BE3C0C17BD7481 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1430;
+				TargetAttributes = {
+					330EF52C47556D962A9B43BD = {
+						DevelopmentTeam = VFB889K3T3;
+						ProvisioningStyle = Automatic;
+					};
+					7D19BA1235946C36763C252B = {
+						DevelopmentTeam = VFB889K3T3;
+					};
+				};
+			};
+			buildConfigurationList = 937EB8C3F2B75BFEB6FAF383 /* Build configuration list for PBXProject "Mivu" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = 53E726CFC7F359E7CEB1DE2F;
+			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				5EDFCD67663D404723EBBBE6 /* XCRemoteSwiftPackageReference "SMBClient" */,
+			);
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 159534E756885EA7C191C432 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				330EF52C47556D962A9B43BD /* Mivu */,
+				7D19BA1235946C36763C252B /* MivuTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		ED1230FDDA36B62D5AD9DC8B /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BCFC1C93222AD2E764BB2BDA /* Assets.xcassets in Resources */,
+				7AB58271875F8BCE9D37B5C2 /* LaunchScreen.storyboard in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		874B8D68665007778A64D3CD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				829E174F11B73D464CF0D67F /* PlaybackCoreTests.swift in Sources */,
+				DDCF58BCEF8762CF98D527E9 /* SOAPParserTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E8344F4B2044EBEEAC3E436B /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				273D43254AF1B78F73D50C9C /* AVPlayerEngine.swift in Sources */,
+				CBC155672B840A6EAE8D3A79 /* AVTransportService.swift in Sources */,
+				B0945693970E7A899C740CC0 /* CarPlaySceneDelegate.swift in Sources */,
+				1A176E5815F1E36B584945EA /* CarPlayTemplateBuilder.swift in Sources */,
+				D9E4FDFB053D897F9E01791A /* CarPlayVideoPresentation.swift in Sources */,
+				A2A01B3586F3FB9FD6810727 /* DLNASource.swift in Sources */,
+				9B60D72C6FC2BCC55F630677 /* DiagnosticsView.swift in Sources */,
+				26867796F56D7F76F12BC6FD /* EmbyClient.swift in Sources */,
+				F7421C7D6A6F35E9A47A70CC /* HTTPServer.swift in Sources */,
+				79B77AFA7C2F558E76160A9D /* HomeView.swift in Sources */,
+				045F69FE04C1D5D3D42529B6 /* JellyfinClient.swift in Sources */,
+				8EF95EFA7831B6805B7B6C91 /* MPVBridge.m in Sources */,
+				2159A6440C0C14A47A3CE4EB /* MPVPlayerEngine.swift in Sources */,
+				6A2D64379E2FC927C6B673A8 /* MainTabView.swift in Sources */,
+				B719C340B92D16CB95A5DCCF /* MediaItem.swift in Sources */,
+				E7E61F750F050CCA6BEC3646 /* MediaServerManager.swift in Sources */,
+				C2366BC1D139429CE9C15ACC /* MediaServerProtocol.swift in Sources */,
+				3FB53F5CC4296D466EF92E09 /* MivuApp.swift in Sources */,
+				3B0C3F58792CD6E3A802DB28 /* PhoneSceneDelegate.swift in Sources */,
+				BDAA1CA065A53D5C9F848B9D /* PlaybackHistory.swift in Sources */,
+				46C79B1C0251D09C85459E0D /* PlaybackRouter.swift in Sources */,
+				AEF10D0C9CEF889B7E517B57 /* PlaybackSession.swift in Sources */,
+				EC250640A449F4A5958CEAB0 /* PlayerEngine.swift in Sources */,
+				CB8EDFDDAA48CE6C63C50D90 /* PlayerService.swift in Sources */,
+				2F55EEC28DAB8991C92947B3 /* PlayerView.swift in Sources */,
+				E371939A401C14575BA6406B /* ReceiverStatusView.swift in Sources */,
+				56DFD7DD123D2B09622A605F /* SMBAssetResourceLoader.swift in Sources */,
+				194909F284E366D6F4F5174E /* SMBLocalHTTPProxy.swift in Sources */,
+				D4EED6F5E9F4C0494F77577D /* SMBMediaClient.swift in Sources */,
+				4F34AE11601F64CEEF07191A /* SOAPParser.swift in Sources */,
+				6DA8B04D20CF864E63C61919 /* SSDPService.swift in Sources */,
+				DDD8EAAADA25B10C23E966D0 /* ServerDetailView.swift in Sources */,
+				9E780E2BAF1106905E539A6B /* ServersView.swift in Sources */,
+				46C7F8F5470B4213D2EA45A7 /* SettingsView.swift in Sources */,
+				360783D98894D9018D8F4F31 /* UPnPDevice.swift in Sources */,
+				E00B02082CD4C101A335DB09 /* URLSource.swift in Sources */,
+				881C15192991FD645B647B33 /* WebDAVClient.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		82DCA933A1A92884FA9B4C56 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 330EF52C47556D962A9B43BD /* Mivu */;
+			targetProxy = BB9F61AF102120EF1F3CC22C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		231960A1993AF39A337E32C8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = Mivu.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VFB889K3T3;
+				ENABLE_PREVIEWS = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(PROJECT_DIR)/Frameworks/MPV",
+					"\"Frameworks/MPV\"",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"GLES_SILENCE_DEPRECATION=1",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					AVFoundation,
+					"-framework",
+					AudioToolbox,
+					"-framework",
+					CoreFoundation,
+					"-framework",
+					CoreMedia,
+					"-framework",
+					CoreText,
+					"-framework",
+					CoreVideo,
+					"-framework",
+					Security,
+					"-framework",
+					OpenGLES,
+					"-framework",
+					VideoToolbox,
+					"-framework",
+					QuartzCore,
+					"-framework",
+					Metal,
+					"-lz",
+					"-liconv",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = (
+					"$(inherited)",
+					"-Xcc",
+					"-DGLES_SILENCE_DEPRECATION=1",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kold.mivu;
+				PRODUCT_MODULE_NAME = Mivu;
+				PRODUCT_NAME = Mivu;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		4FC6ED214479D1298837ECC8 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				DEVELOPMENT_TEAM = VFB889K3T3;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		6F456AC2EA7A7A7F26A500FC /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = NO;
+				CODE_SIGN_ENTITLEMENTS = Mivu.entitlements;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = VFB889K3T3;
+				ENABLE_PREVIEWS = YES;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited) $(PROJECT_DIR)/Frameworks/MPV",
+					"\"Frameworks/MPV\"",
+				);
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"GLES_SILENCE_DEPRECATION=1",
+				);
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = Sources/Info.plist;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.1.0;
+				OTHER_LDFLAGS = (
+					"$(inherited)",
+					"-framework",
+					AVFoundation,
+					"-framework",
+					AudioToolbox,
+					"-framework",
+					CoreFoundation,
+					"-framework",
+					CoreMedia,
+					"-framework",
+					CoreText,
+					"-framework",
+					CoreVideo,
+					"-framework",
+					Security,
+					"-framework",
+					OpenGLES,
+					"-framework",
+					VideoToolbox,
+					"-framework",
+					QuartzCore,
+					"-framework",
+					Metal,
+					"-lz",
+					"-liconv",
+					"-lc++",
+				);
+				OTHER_SWIFT_FLAGS = (
+					"$(inherited)",
+					"-Xcc",
+					"-DGLES_SILENCE_DEPRECATION=1",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kold.mivu;
+				PRODUCT_MODULE_NAME = Mivu;
+				PRODUCT_NAME = Mivu;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8F5824CDCF9EA64897E87025 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = VFB889K3T3;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kold.mivu.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mivu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Mivu";
+			};
+			name = Release;
+		};
+		DD1BBBB4604F69DCBBF86AAA /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = VFB889K3T3;
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		EBF6E3A0499C0F056554B91B /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				DEVELOPMENT_TEAM = VFB889K3T3;
+				"EXCLUDED_ARCHS[sdk=iphonesimulator*]" = x86_64;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.kold.mivu.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Mivu.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Mivu";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		1FDFF21213D48B9088395EA9 /* Build configuration list for PBXNativeTarget "MivuTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				EBF6E3A0499C0F056554B91B /* Debug */,
+				8F5824CDCF9EA64897E87025 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		248E5A4F3F85F7D04C2212F1 /* Build configuration list for PBXNativeTarget "Mivu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				231960A1993AF39A337E32C8 /* Debug */,
+				6F456AC2EA7A7A7F26A500FC /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		937EB8C3F2B75BFEB6FAF383 /* Build configuration list for PBXProject "Mivu" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				4FC6ED214479D1298837ECC8 /* Debug */,
+				DD1BBBB4604F69DCBBF86AAA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		5EDFCD67663D404723EBBBE6 /* XCRemoteSwiftPackageReference "SMBClient" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kishikawakatsumi/SMBClient.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		363E3E41D8FA4FEF8929AEBC /* SMBClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 5EDFCD67663D404723EBBBE6 /* XCRemoteSwiftPackageReference "SMBClient" */;
+			productName = SMBClient;
+		};
+/* End XCSwiftPackageProductDependency section */
+	};
+	rootObject = A3AFAEEC52BE3C0C17BD7481 /* Project object */;
+}

@@ -1,14 +1,14 @@
 import Foundation
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "PlaybackHistory")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "PlaybackHistory")
 
 /// Manages locally persisted playback history.
 @MainActor
 public final class PlaybackHistory: ObservableObject {
     public static let shared = PlaybackHistory()
 
-    private let userDefaultsKey = "vimu_playback_history_v1"
+    private let userDefaultsKey = "mivu_playback_history_v1"
     private let maxHistoryEntries = 50
 
     @Published public private(set) var items: [MediaItem] = []

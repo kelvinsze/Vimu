@@ -1,6 +1,6 @@
-# Vimu --- 私有版 CarPlay Video Receiver 开发与权限申请任务书
+# Mivu --- 私有版 CarPlay Video Receiver 开发与权限申请任务书
 
-**项目名：** Vimu\
+**项目名：** Mivu\
 **定位：** Local Network Video Player & Receiver\
 **目标平台：** iOS 27 / CarPlay Video in Car\
 **分发方式：** Development / Ad Hoc 私有使用，第一阶段不上架 App Store\
@@ -11,7 +11,7 @@
 
 ## 1. 项目目标
 
-开发一个轻量级 iOS 视频播放器与局域网投送接收器 **Vimu**。
+开发一个轻量级 iOS 视频播放器与局域网投送接收器 **Mivu**。
 
 第一阶段核心目标：
 
@@ -30,7 +30,7 @@
 -   增加 **Jellyfin** 服务器连接。
 -   在 iPhone 与 CarPlay 上直接浏览个人媒体库并播放。
 -   优先 Direct Play；必要时使用服务端转码。
--   让 Vimu 从"投屏接收器"扩展为轻量的个人媒体 CarPlay 客户端。
+-   让 Mivu 从"投屏接收器"扩展为轻量的个人媒体 CarPlay 客户端。
 
 ------------------------------------------------------------------------
 
@@ -69,7 +69,7 @@ Emby / Jellyfin
 
 如果 CarPlay Video entitlement 未获批准：
 
--   Vimu 的普通 iPhone 播放器仍可继续开发。
+-   Mivu 的普通 iPhone 播放器仍可继续开发。
 -   DLNA Receiver 仍可继续验证。
 -   不继续投入大量 CarPlay 专用 UI 与兼容性开发。
 
@@ -85,20 +85,20 @@ Emby / Jellyfin
 
 建议申请描述：
 
-> Vimu is a local-network video player and media receiver for
+> Mivu is a local-network video player and media receiver for
 > user-selected media. It supports HTTP/HTTPS video, HLS streams,
 > standards-compliant local-network media casting, and personal media
 > servers.
 >
-> On supported CarPlay systems with Video in Car, Vimu allows users to
+> On supported CarPlay systems with Video in Car, Mivu allows users to
 > play their selected video content when the vehicle indicates that
 > video playback is available.
 >
-> Vimu relies entirely on CarPlay and the vehicle system to determine
+> Mivu relies entirely on CarPlay and the vehicle system to determine
 > video availability. It does not spoof vehicle state, bypass driving
 > restrictions, or enable video while driving.
 >
-> Vimu also supports AirPlay video streaming from its iPhone playback
+> Mivu also supports AirPlay video streaming from its iPhone playback
 > experience.
 
 申请重点：
@@ -128,14 +128,14 @@ com.apple.developer.networking.multicast
 
 建议申请描述：
 
-> Vimu implements a standards-compliant UPnP/DLNA MediaRenderer for
+> Mivu implements a standards-compliant UPnP/DLNA MediaRenderer for
 > user-selected video content on the local network.
 >
 > UPnP SSDP discovery requires sending and receiving UDP multicast
 > traffic on the local network. Multicast is used only for local device
 > discovery and renderer control.
 >
-> Vimu does not use multicast for advertising, analytics, tracking, or
+> Mivu does not use multicast for advertising, analytics, tracking, or
 > Internet-facing communication.
 
 ### 3.3 Local Network Privacy
@@ -148,7 +148,7 @@ NSLocalNetworkUsageDescription
 
 建议文案：
 
-> Vimu uses your local network to discover media servers and receive
+> Mivu uses your local network to discover media servers and receive
 > video casting requests from devices and apps on your network.
 
 如实际使用 Bonjour，再按真实 service type 配置
@@ -190,7 +190,7 @@ NSLocalNetworkUsageDescription
      ↓
 SSDP Discovery
      ↓
-Vimu MediaRenderer
+Mivu MediaRenderer
      ↓
 SetAVTransportURI
      ↓
@@ -238,7 +238,7 @@ Q50L
 
 验证：
 
--   Vimu 是否出现在 CarPlay。
+-   Mivu 是否出现在 CarPlay。
 -   `CPSessionConfiguration.supportsVideoPlayback` 状态。
 -   Q50L 后装模块停车时是否显示视频。
 -   车辆不允许视频时系统如何处理。
@@ -249,7 +249,7 @@ Q50L
 必须证明：
 
 ``` text
-Vimu → CarPlay Video → Q50L
+Mivu → CarPlay Video → Q50L
 ```
 
 能够工作。
@@ -273,7 +273,7 @@ Gate 1 通过后，把 DLNA Receiver 接到 CarPlay：
        ↓
 DLNA / UPnP
        ↓
-Vimu Receiver
+Mivu Receiver
        ↓
 PlayerService
        ↓
@@ -288,9 +288,9 @@ Q50L
 
 验证：
 
--   第三方 App 能发现 Vimu。
--   能把媒体 URI 发送给 Vimu。
--   Vimu 自动开始播放。
+-   第三方 App 能发现 Mivu。
+-   能把媒体 URI 发送给 Mivu。
+-   Mivu 自动开始播放。
 -   CarPlay 同步进入视频播放。
 -   Pause / Seek 状态一致。
 
@@ -304,14 +304,14 @@ Q50L
 手机 A → 电视 B
 ```
 
-Vimu 的重要目标可能是：
+Mivu 的重要目标可能是：
 
 ``` text
 App A
   ↓
 同一台 iPhone
   ↓
-Vimu
+Mivu
   ↓
 CarPlay
 ```
@@ -320,7 +320,7 @@ CarPlay
 
 -   iOS 是否允许其他 App 发现同机运行的 MediaRenderer。
 -   SSDP multicast 是否会 loopback 到同一设备。
--   Vimu 切后台后 Receiver 是否仍可工作。
+-   Mivu 切后台后 Receiver 是否仍可工作。
 -   CarPlay scene 激活时 iPhone App 生命周期。
 -   Wireless CarPlay 占用 Wi-Fi 后 multicast 路由行为。
 -   Cellular + CarPlay Wi-Fi 并存时媒体 URL 的访问路径。
@@ -341,7 +341,7 @@ CarPlay
 ## 8. 技术架构
 
 ``` text
-Vimu
+Mivu
 ├── Application
 │
 ├── MediaCore
@@ -402,10 +402,10 @@ Vimu
 
 ### 9.1 目标
 
-Vimu 可以添加个人媒体服务器：
+Mivu 可以添加个人媒体服务器：
 
 ``` text
-Vimu
+Mivu
  ├── Emby Server
  └── Jellyfin Server
 ```
@@ -482,7 +482,7 @@ Server Transcode
 后续 CarPlay 首页：
 
 ``` text
-Vimu
+Mivu
 ├── Now Playing
 ├── Cast
 ├── Continue Watching
@@ -501,7 +501,7 @@ CarPlay 视频浏览保持简洁。
 
 ### Phase 0 --- Day 1
 
--   [ ] 创建 Vimu Xcode Project
+-   [ ] 创建 Mivu Xcode Project
 -   [ ] 注册 Bundle ID
 -   [ ] 创建项目 Landing Page
 -   [ ] 创建 Privacy Policy
@@ -539,7 +539,7 @@ CarPlay 视频浏览保持简洁。
 **验收：**
 
 ``` text
-DLNA Controller → Vimu → AVPlayer
+DLNA Controller → Mivu → AVPlayer
 ```
 
 工作。
@@ -588,7 +588,7 @@ AVPlayer → CarPlay Video → Q50L
 **Gate 2：**
 
 ``` text
-第三方 App → DLNA → Vimu → CarPlay → Q50L
+第三方 App → DLNA → Mivu → CarPlay → Q50L
 ```
 
 稳定工作。
@@ -616,7 +616,7 @@ Gate 1 + Gate 2 均通过后开始。
 ``` text
 Emby/Jellyfin
       ↓
-Vimu
+Mivu
       ↓
 AVPlayer
       ↓
@@ -640,7 +640,7 @@ Approved Managed Capabilities
        ↓
 Development / Ad Hoc Profile
        ↓
-Vimu IPA
+Mivu IPA
        ↓
 Registered iPhone
 ```
@@ -664,7 +664,7 @@ Registered iPhone
 
 ## 12. 安全边界
 
-Vimu 不实现：
+Mivu 不实现：
 
 -   Driving video unlock
 -   Parking state spoofing
@@ -683,10 +683,10 @@ Vimu 不实现：
 
   场景                          预期
   ----------------------------- ---------------------------
-  CarPlay 连接                  Vimu 正常出现
+  CarPlay 连接                  Mivu 正常出现
   `supportsVideoPlayback`       正确返回车机能力
   停车                          视频可显示
-  车辆禁止视频                  Vimu 不绕过系统限制
+  车辆禁止视频                  Mivu 不绕过系统限制
   有线 CarPlay                  正常
   无线 CarPlay                  正常
   DLNA 投送                     自动开始播放
@@ -746,32 +746,32 @@ v0.2 后增加：
 ## 15. 最终路线图
 
 ``` text
-Vimu 0.1
+Mivu 0.1
 Video Player
     ↓
-Vimu 0.2
+Mivu 0.2
 DLNA Receiver
     ↓
 CarPlay entitlement
     ↓
-Vimu 0.3
+Mivu 0.3
 CarPlay Video PoC
     ↓
 Q50L Gate
     ↓
-Vimu 0.4
+Mivu 0.4
 DLNA → CarPlay
     ↓
-Vimu 0.5
+Mivu 0.5
 投屏兼容性 / Headers / Proxy
     ↓
-Vimu 0.6
+Mivu 0.6
 Jellyfin
     ↓
-Vimu 0.7
+Mivu 0.7
 Emby
     ↓
-Vimu 1.0
+Mivu 1.0
 Private Stable Release
 ```
 
@@ -779,14 +779,14 @@ Private Stable Release
 
 ## 16. 项目完成定义
 
-Vimu 第一阶段完成的标准不是"功能很多"，而是下面这条链路稳定：
+Mivu 第一阶段完成的标准不是"功能很多"，而是下面这条链路稳定：
 
 ``` text
 第三方 App
      ↓
 DLNA
      ↓
-Vimu
+Mivu
      ↓
 AVPlayer
      ↓
@@ -800,7 +800,7 @@ Q50L
 ``` text
 Emby / Jellyfin
        ↓
-Vimu Media Library
+Mivu Media Library
        ↓
 Direct Play / Server Transcode
        ↓

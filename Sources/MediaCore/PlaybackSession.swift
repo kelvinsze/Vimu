@@ -1,6 +1,6 @@
 import Foundation
 
-/// Lifecycle playback status of Vimu Player.
+/// Lifecycle playback status of Mivu Player.
 public enum PlaybackStatus: String, Codable, Sendable {
     case idle = "IDLE"
     case loading = "LOADING"

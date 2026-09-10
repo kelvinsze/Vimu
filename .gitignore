@@ -17,6 +17,9 @@ DerivedData
 *.xcuserstate
 project.xcworkspace
 
+# Locally generated LGPL libmpv XCFramework (rebuild with scripts/build-libmpv-ios.sh)
+Frameworks/MPV/libmpv.xcframework/
+
 # Swift Package Manager
 .build/
 Packages/

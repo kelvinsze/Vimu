@@ -2,7 +2,7 @@ import SwiftUI
 
 /// Settings view for configuring UPnP device friendly name, port, and viewing entitlement status.
 public struct SettingsView: View {
-    @AppStorage("vimu_custom_friendly_name") private var customFriendlyName: String = ""
+    @AppStorage("mivu_custom_friendly_name") private var customFriendlyName: String = ""
     @State private var isShowingSavedAlert = false
 
     public init() {}
@@ -11,8 +11,8 @@ public struct SettingsView: View {
         NavigationStack {
             Form {
                 Section("Receiver Configuration") {
-                    TextField("Friendly Name (e.g. Vimu Car)", text: $customFriendlyName)
-                        .onChange(of: customFriendlyName) { newValue in
+                    TextField("Friendly Name (e.g. Mivu Car)", text: $customFriendlyName)
+                        .onChange(of: customFriendlyName) { _, newValue in
                             if !newValue.isEmpty {
                                 UPnPDevice.shared.friendlyName = newValue
                             }
@@ -40,8 +40,8 @@ public struct SettingsView: View {
                         Text("CarPlay Video Capability")
                         Spacer()
                         Label(
-                            "Cannot verify signed entitlement",
-                            systemImage: "questionmark.diamond"
+                            "Verify from signed IPA",
+                            systemImage: "checkmark.shield"
                         )
                             .font(.caption.bold())
                             .foregroundColor(.secondary)
@@ -51,15 +51,15 @@ public struct SettingsView: View {
                         Text("Multicast Networking")
                         Spacer()
                         Label(
-                            "Cannot verify signed entitlement",
-                            systemImage: "questionmark.diamond"
+                            "Verify from signed IPA",
+                            systemImage: "checkmark.shield"
                         )
                             .font(.caption)
                             .foregroundColor(.secondary)
                     }
                 }
 
-                Section("About Vimu") {
+                Section("About Mivu") {
                     HStack {
                         Text("Version")
                         Spacer()
@@ -74,7 +74,7 @@ public struct SettingsView: View {
                             .foregroundColor(.secondary)
                     }
 
-                    Link("Privacy Policy", destination: URL(string: "https://vimu.app/privacy")!)
+                    Link("Privacy Policy", destination: URL(string: "https://mivu.app/privacy")!)
                 }
             }
             .navigationTitle("Settings")

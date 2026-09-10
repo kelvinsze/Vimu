@@ -2,7 +2,7 @@ import UIKit
 import SwiftUI
 import OSLog
 
-private let logger = Logger(subsystem: "com.kelvinsze.vimu", category: "PhoneSceneDelegate")
+private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "PhoneSceneDelegate")
 
 /// iPhone Window Scene Delegate managing window presentation and deep linking.
 public final class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {

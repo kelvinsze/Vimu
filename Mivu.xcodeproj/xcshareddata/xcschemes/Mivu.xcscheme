@@ -15,10 +15,10 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "761E269E19B424F1E854B501"
-               BuildableName = "Vimu.app"
-               BlueprintName = "Vimu"
-               ReferencedContainer = "container:Vimu.xcodeproj">
+               BlueprintIdentifier = "330EF52C47556D962A9B43BD"
+               BuildableName = "Mivu.app"
+               BlueprintName = "Mivu"
+               ReferencedContainer = "container:Mivu.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
          <BuildActionEntry
@@ -29,10 +29,10 @@
             buildForAnalyzing = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "BF493B4E256EFC15BE9404A9"
-               BuildableName = "VimuTests.xctest"
-               BlueprintName = "VimuTests"
-               ReferencedContainer = "container:Vimu.xcodeproj">
+               BlueprintIdentifier = "7D19BA1235946C36763C252B"
+               BuildableName = "MivuTests.xctest"
+               BlueprintName = "MivuTests"
+               ReferencedContainer = "container:Mivu.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -46,10 +46,10 @@
       <MacroExpansion>
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "761E269E19B424F1E854B501"
-            BuildableName = "Vimu.app"
-            BlueprintName = "Vimu"
-            ReferencedContainer = "container:Vimu.xcodeproj">
+            BlueprintIdentifier = "330EF52C47556D962A9B43BD"
+            BuildableName = "Mivu.app"
+            BlueprintName = "Mivu"
+            ReferencedContainer = "container:Mivu.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
       <Testables>
@@ -58,10 +58,10 @@
             parallelizable = "NO">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "BF493B4E256EFC15BE9404A9"
-               BuildableName = "VimuTests.xctest"
-               BlueprintName = "VimuTests"
-               ReferencedContainer = "container:Vimu.xcodeproj">
+               BlueprintIdentifier = "7D19BA1235946C36763C252B"
+               BuildableName = "MivuTests.xctest"
+               BlueprintName = "MivuTests"
+               ReferencedContainer = "container:Mivu.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -82,10 +82,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "761E269E19B424F1E854B501"
-            BuildableName = "Vimu.app"
-            BlueprintName = "Vimu"
-            ReferencedContainer = "container:Vimu.xcodeproj">
+            BlueprintIdentifier = "330EF52C47556D962A9B43BD"
+            BuildableName = "Mivu.app"
+            BlueprintName = "Mivu"
+            ReferencedContainer = "container:Mivu.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -99,10 +99,10 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "761E269E19B424F1E854B501"
-            BuildableName = "Vimu.app"
-            BlueprintName = "Vimu"
-            ReferencedContainer = "container:Vimu.xcodeproj">
+            BlueprintIdentifier = "330EF52C47556D962A9B43BD"
+            BuildableName = "Mivu.app"
+            BlueprintName = "Mivu"
+            ReferencedContainer = "container:Mivu.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
