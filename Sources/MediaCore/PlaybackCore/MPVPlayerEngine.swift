@@ -102,6 +102,17 @@ private struct MPVControlUpdate {
     let paused: Bool
 }
 
+/// The libmpv handle is only used by the serialized control queue. The C API
+/// owns the pointed-to storage, so transferring this reference does not
+/// transfer mutable Swift-managed state.
+private struct MPVControlHandle: @unchecked Sendable {
+    let rawValue: UnsafeMutableRawPointer?
+
+    init(_ rawValue: UnsafeMutableRawPointer?) {
+        self.rawValue = rawValue
+    }
+}
+
 @MainActor
 public final class MPVPlayerEngine: PlayerEngine {
     public let renderSurfaceKind: PlaybackRenderSurfaceKind = .mpvOpenGLES
@@ -209,36 +220,36 @@ public final class MPVPlayerEngine: PlayerEngine {
         } else {
             sourceURL = request.url
         }
-        let handle = handle
+        let handle = MPVControlHandle(handle)
         controlQueue.async { [weak self] in
             let result = sourceURL.absoluteString.withCString { url in
                 headerString.withCString { headers in
-                    mivuMPVLoad(handle, url, headerString.isEmpty ? nil : headers, request.startPosition)
+                    mivuMPVLoad(handle.rawValue, url, headerString.isEmpty ? nil : headers, request.startPosition)
                 }
             }
             guard result < 0 else { return }
-            let message = Self.controlError(handle)
+            let message = Self.controlError(handle.rawValue)
             Task { @MainActor [weak self] in self?.fail(message) }
         }
     }
 
     public func play() {
         guard isOperational else { return }
-        let handle = handle
-        controlQueue.async { _ = mivuMPVSetPaused(handle, 0) }
+        let handle = MPVControlHandle(handle)
+        controlQueue.async { _ = mivuMPVSetPaused(handle.rawValue, 0) }
         updateSnapshot { $0.status = .playing; $0.errorMessage = nil }
     }
 
     public func pause() {
         guard isOperational else { return }
-        let handle = handle
-        controlQueue.async { _ = mivuMPVSetPaused(handle, 1) }
+        let handle = MPVControlHandle(handle)
+        controlQueue.async { _ = mivuMPVSetPaused(handle.rawValue, 1) }
         updateSnapshot { $0.status = .paused }
     }
 
     public func stop() {
-        let handle = handle
-        controlQueue.async { _ = mivuMPVStop(handle) }
+        let handle = MPVControlHandle(handle)
+        controlQueue.async { _ = mivuMPVStop(handle.rawValue) }
         hasLoadedFile = false
         pendingSubtitleTrack = nil
         updateSnapshot {
@@ -252,9 +263,9 @@ public final class MPVPlayerEngine: PlayerEngine {
 
     public func seek(to time: TimeInterval) {
         let target = max(0, time)
-        let handle = handle
+        let handle = MPVControlHandle(handle)
         controlQueue.async { [weak self] in
-            let result = mivuMPVSeek(handle, target)
+            let result = mivuMPVSeek(handle.rawValue, target)
             Task { @MainActor [weak self] in
                 self?.eventContinuation?.yield(.diagnostic(.seekCompleted(target: target, finished: result >= 0)))
             }
@@ -263,21 +274,21 @@ public final class MPVPlayerEngine: PlayerEngine {
 
     public func setPlaybackRate(_ rate: Float) {
         let clamped = max(0.1, rate)
-        let handle = handle
-        controlQueue.async { _ = mivuMPVSetRate(handle, Double(clamped)) }
+        let handle = MPVControlHandle(handle)
+        controlQueue.async { _ = mivuMPVSetRate(handle.rawValue, Double(clamped)) }
         updateSnapshot { $0.playbackRate = clamped }
     }
 
     public func setVolume(_ volume: Float) {
         let clamped = max(0, min(volume, 1))
-        let handle = handle
-        controlQueue.async { _ = mivuMPVSetVolume(handle, Double(clamped)) }
+        let handle = MPVControlHandle(handle)
+        controlQueue.async { _ = mivuMPVSetVolume(handle.rawValue, Double(clamped)) }
         updateSnapshot { $0.volume = clamped }
     }
 
     public func setMuted(_ isMuted: Bool) {
-        let handle = handle
-        controlQueue.async { _ = mivuMPVSetMuted(handle, isMuted ? 1 : 0) }
+        let handle = MPVControlHandle(handle)
+        controlQueue.async { _ = mivuMPVSetMuted(handle.rawValue, isMuted ? 1 : 0) }
         updateSnapshot { $0.isMuted = isMuted }
     }
 
@@ -291,10 +302,10 @@ public final class MPVPlayerEngine: PlayerEngine {
     }
 
     private func applySubtitleTrack(_ track: SubtitleTrack?) {
-        let handle = handle
+        let handle = MPVControlHandle(handle)
         guard let track else {
             controlQueue.async {
-                let result = mivuMPVSetSubtitleID(handle, 0)
+                let result = mivuMPVSetSubtitleID(handle.rawValue, 0)
                 Task { @MainActor in
                     SSDPService.shared.recordPlaybackDebug("[DEBUG-subtitle] MPV_SID id=0 result=\(result)")
                 }
@@ -303,14 +314,14 @@ public final class MPVPlayerEngine: PlayerEngine {
         }
         if !track.isEmbedded, let url = track.url {
             controlQueue.async {
-                let result = url.absoluteString.withCString { mivuMPVAddSubtitle(handle, $0) }
+                let result = url.absoluteString.withCString { mivuMPVAddSubtitle(handle.rawValue, $0) }
                 Task { @MainActor in
                     SSDPService.shared.recordPlaybackDebug("[DEBUG-subtitle] MPV_SUB_ADD id=\(track.id) result=\(result)")
                 }
             }
         } else if let id = Int32(track.id) {
             controlQueue.async {
-                let result = mivuMPVSetSubtitleID(handle, id)
+                let result = mivuMPVSetSubtitleID(handle.rawValue, id)
                 Task { @MainActor in
                     SSDPService.shared.recordPlaybackDebug("[DEBUG-subtitle] MPV_SID id=\(id) result=\(result)")
                 }
@@ -335,10 +346,10 @@ public final class MPVPlayerEngine: PlayerEngine {
 
     private func pollEventsOnControlQueue() async {
         guard isOperational else { return }
-        let handle = handle
+        let handle = MPVControlHandle(handle)
         let update = await withCheckedContinuation { continuation in
             controlQueue.async {
-                continuation.resume(returning: Self.collectControlUpdate(handle))
+                continuation.resume(returning: Self.collectControlUpdate(handle.rawValue))
             }
         }
         applyControlUpdate(update)
