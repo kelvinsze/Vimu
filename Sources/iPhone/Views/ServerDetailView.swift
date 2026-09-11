@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 /// Shows media libraries and video items inside a connected Emby / Jellyfin server.
 public struct ServerDetailView: View {
@@ -16,115 +17,40 @@ public struct ServerDetailView: View {
     @State private var isShowingPlayer = false
     @State private var playbackResolveTask: Task<Void, Never>?
     @State private var playbackResolveID: UUID?
+    private let libraryColumns = [GridItem(.adaptive(minimum: 104, maximum: 150), spacing: 12)]
 
     public init(serverInfo: SavedServerInfo) {
         self.serverInfo = serverInfo
     }
 
     public var body: some View {
-        List {
-            // MARK: - Libraries Section
-            if !continueWatching.isEmpty {
-                Section("Continue Watching") {
-                    ForEach(continueWatching) { item in
-                        Button(item.title) { play(item) }
-                    }
+        ScrollView {
+            LazyVStack(alignment: .leading, spacing: 28) {
+                if !libraries.isEmpty { libraryPicker }
+                if !continueWatching.isEmpty {
+                    posterRow(title: "Continue Watching", items: continueWatching, showsProgress: true)
                 }
-            }
-
-            if !searchResults.isEmpty {
-                Section("Search Results") {
-                    ForEach(searchResults) { item in
-                        Button(item.title) { play(item) }
+                if !searchText.isEmpty {
+                    if !searchResults.isEmpty {
+                        posterGrid(title: "Search Results", items: searchResults)
+                    } else if !isLoading {
+                        ContentUnavailableView.search(text: searchText)
                     }
-                }
-            }
-
-            if !libraries.isEmpty {
-                Section("Media Libraries") {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 12) {
-                            ForEach(libraries) { lib in
-                                Button {
-                                    selectedLibrary = lib
-                                    loadItems(for: lib)
-                                } label: {
-                                    VStack(spacing: 6) {
-                                        Image(systemName: iconForCollection(lib.collectionType))
-                                            .font(.title2)
-                                            .foregroundColor(selectedLibrary?.id == lib.id ? .white : .cyan)
-                                        Text(lib.name)
-                                            .font(.caption.bold())
-                                            .foregroundColor(selectedLibrary?.id == lib.id ? .white : .primary)
-                                    }
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 10)
-                                    .background(selectedLibrary?.id == lib.id ? Color.cyan : Color(.secondarySystemBackground))
-                                    .cornerRadius(10)
-                                }
-                            }
-                        }
-                        .padding(.vertical, 4)
-                    }
-                }
-            }
-
-            // MARK: - Videos List Section
-            Section(selectedLibrary?.name ?? "Videos") {
-                if isLoading {
-                    HStack {
-                        Spacer()
-                        ProgressView()
-                        Spacer()
-                    }
-                    .padding()
-                } else if libraryItems.isEmpty {
-                    Text("No videos found in this library.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
                 } else {
-                    ForEach(libraryItems) { item in
-                        Button {
-                            play(item)
-                        } label: {
-                            HStack(spacing: 14) {
-                                Image(systemName: "play.circle.fill")
-                                    .font(.title2)
-                                    .foregroundColor(.cyan)
-
-                                VStack(alignment: .leading, spacing: 2) {
-                                    Text(item.title)
-                                        .font(.subheadline.bold())
-                                        .foregroundColor(.primary)
-
-                                    if let duration = item.duration {
-                                        Text(SOAPParser.formatUPnPTime(duration))
-                                            .font(.caption)
-                                            .foregroundColor(.secondary)
-                                    }
-                                }
-
-                                Spacer()
-
-                                Image(systemName: "chevron.right")
-                                    .font(.caption)
-                                    .foregroundColor(.secondary)
-                            }
-                            .padding(.vertical, 4)
-                        }
-                    }
+                    mediaLibrary
+                }
+                if let error = errorMessage {
+                    Label(error, systemImage: "exclamationmark.triangle.fill")
+                        .font(.footnote)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal, 2)
                 }
             }
-
-            if let error = errorMessage {
-                Section {
-                    Text(error)
-                        .font(.caption)
-                        .foregroundColor(.red)
-                }
-            }
+            .padding(.vertical, 12)
         }
+        .background(Color(.systemBackground))
         .navigationTitle(serverInfo.name)
+        .navigationBarTitleDisplayMode(.large)
         .onAppear {
             loadLibraries()
             loadContinueWatching()
@@ -134,6 +60,121 @@ public struct ServerDetailView: View {
         .fullScreenCover(isPresented: $isShowingPlayer) {
             PlayerView()
         }
+    }
+
+    private var libraryPicker: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(libraries) { library in
+                    Button {
+                        selectedLibrary = library
+                        libraryItems = []
+                        loadItems(for: library)
+                    } label: {
+                        Label(library.name, systemImage: iconForCollection(library.collectionType))
+                            .font(.subheadline.weight(.semibold))
+                            .lineLimit(1)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 9)
+                    }
+                    .buttonStyle(.bordered)
+                    .tint(selectedLibrary?.id == library.id ? .cyan : .secondary)
+                    .buttonBorderShape(.capsule)
+                }
+            }
+            .padding(.horizontal)
+        }
+    }
+
+    @ViewBuilder
+    private var mediaLibrary: some View {
+        if isLoading && libraryItems.isEmpty {
+            HStack {
+                Spacer()
+                ProgressView().padding(.top, 60)
+                Spacer()
+            }
+        } else if let selectedLibrary, !libraryItems.isEmpty {
+            posterGrid(title: selectedLibrary.name, items: libraryItems)
+        } else if !isLoading && selectedLibrary != nil {
+            ContentUnavailableView("No videos found", systemImage: "film", description: Text("This library has no playable videos."))
+                .padding(.top, 48)
+        }
+    }
+
+    private func posterRow(title: String, items: [MediaItem], showsProgress: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(title)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(alignment: .top, spacing: 12) {
+                    ForEach(items) { item in
+                        Button { play(item) } label: {
+                            VStack(alignment: .leading, spacing: 7) {
+                                PosterArtwork(item: item)
+                                    .frame(width: 128, height: 192)
+                                    .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                                    .overlay(alignment: .bottom) {
+                                        if showsProgress, let progress = progress(for: item) {
+                                            ProgressView(value: progress).tint(.cyan).padding(8)
+                                        }
+                                    }
+                                Text(item.title)
+                                    .font(.footnote.weight(.medium))
+                                    .foregroundStyle(.primary)
+                                    .lineLimit(1)
+                                if showsProgress, let remaining = remainingTime(for: item) {
+                                    Text("\(SOAPParser.formatUPnPTime(remaining)) left")
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
+                            .frame(width: 128, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+    }
+
+    private func posterGrid(title: String, items: [MediaItem]) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            sectionTitle(title)
+            LazyVGrid(columns: libraryColumns, spacing: 18) {
+                ForEach(items) { item in
+                    Button { play(item) } label: {
+                        VStack(alignment: .leading, spacing: 7) {
+                            PosterArtwork(item: item)
+                                .frame(maxWidth: .infinity)
+                                .aspectRatio(2 / 3, contentMode: .fit)
+                                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+                            Text(item.title)
+                                .font(.footnote.weight(.medium))
+                                .foregroundStyle(.primary)
+                                .lineLimit(2, reservesSpace: true)
+                        }
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal)
+    }
+
+    private func sectionTitle(_ title: String) -> some View {
+        Text(title).font(.title3.bold()).padding(.horizontal)
+    }
+
+    private func progress(for item: MediaItem) -> Double? {
+        guard let duration = item.duration, duration > 0,
+              let position = item.resumePosition, position > 0 else { return nil }
+        return min(position / duration, 1)
+    }
+
+    private func remainingTime(for item: MediaItem) -> TimeInterval? {
+        guard let duration = item.duration, let position = item.resumePosition else { return nil }
+        return max(duration - position, 0)
     }
 
     // MARK: - Networking
@@ -240,6 +281,36 @@ public struct ServerDetailView: View {
         case "tvshows": return "tv"
         case "music": return "music.note"
         default: return "play.square.stack"
+        }
+    }
+}
+
+private struct PosterArtwork: View {
+    let item: MediaItem
+    @State private var image: UIImage?
+
+    var body: some View {
+        ZStack {
+            Color(.tertiarySystemFill)
+            if let image {
+                Image(uiImage: image)
+                    .resizable()
+                    .scaledToFill()
+            } else {
+                Image(systemName: "film")
+                    .font(.title2)
+                    .foregroundStyle(.tertiary)
+            }
+        }
+        .clipped()
+        .task(id: item.posterUrl) {
+            guard let url = item.posterUrl else { return }
+            var request = URLRequest(url: url)
+            item.headers?.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
+            guard let (data, _) = try? await URLSession.shared.data(for: request),
+                  let loaded = UIImage(data: data),
+                  !Task.isCancelled else { return }
+            image = loaded
         }
     }
 }

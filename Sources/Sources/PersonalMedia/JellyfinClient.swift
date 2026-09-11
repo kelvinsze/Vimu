@@ -133,7 +133,19 @@ public final class JellyfinClient: MediaServerProtocol, @unchecked Sendable {
         guard let id = dict["Id"] as? String, let name = dict["Name"] as? String else { return nil }
         let duration = ((dict["RunTimeTicks"] as? Double) ?? 0) / 10_000_000
         let playback = MediaPlaybackInfoSelector.select(itemId: id, baseURL: serverBaseURL, payload: dict, streamPath: "Videos/\(id)/stream")
-        return MediaItem(title: name, url: playback?.url ?? serverBaseURL.appendingPathComponent("Videos/\(id)/stream.mp4"), sourceType: .personalMedia, mimeType: "video/mp4", duration: duration > 0 ? duration : nil, headers: authorizationHeaders(), originator: serverName, serverID: serverId, serverItemID: id, playSessionID: playback?.playSessionId, mediaSourceID: playback?.mediaSourceId, resumePosition: playback?.resumePosition ?? (((dict["UserData"] as? [String: Any])?["PlaybackPositionTicks"] as? Double ?? 0) / 10_000_000), subtitleTracks: playback?.subtitleTracks)
+        return MediaItem(title: name, url: playback?.url ?? serverBaseURL.appendingPathComponent("Videos/\(id)/stream.mp4"), sourceType: .personalMedia, mimeType: "video/mp4", duration: duration > 0 ? duration : nil, posterUrl: posterURL(for: id, item: dict), headers: authorizationHeaders(), originator: serverName, serverID: serverId, serverItemID: id, playSessionID: playback?.playSessionId, mediaSourceID: playback?.mediaSourceId, resumePosition: playback?.resumePosition ?? (((dict["UserData"] as? [String: Any])?["PlaybackPositionTicks"] as? Double ?? 0) / 10_000_000), subtitleTracks: playback?.subtitleTracks)
+    }
+
+    private func posterURL(for itemID: String, item: [String: Any]) -> URL? {
+        let imageTags = item["ImageTags"] as? [String: Any]
+        guard let tag = (imageTags?["Primary"] as? String) ?? (item["PrimaryImageTag"] as? String) else { return nil }
+        var components = URLComponents(url: serverBaseURL.appendingPathComponent("Items/\(itemID)/Images/Primary"), resolvingAgainstBaseURL: false)
+        components?.queryItems = [
+            URLQueryItem(name: "maxWidth", value: "360"),
+            URLQueryItem(name: "quality", value: "90"),
+            URLQueryItem(name: "tag", value: tag)
+        ]
+        return components?.url
     }
 
     public func fetchPlaybackInfo(itemId: String) async throws -> MediaPlaybackInfo {
