@@ -25,6 +25,7 @@ struct MivuMPV {
     _Atomic int has_new_frame;
     int last_width;
     int last_height;
+    _Atomic int frame_render_pending;
 
     EAGLContext *gl_context;
     CVOpenGLESTextureCacheRef texture_cache;
@@ -183,6 +184,7 @@ int mivu_mpv_load(MivuMPV *player, const char *url, const char *headers, double 
     snprintf(start, sizeof(start), "%.3f", start_position);
     mpv_set_property_string(player->handle, "start", start);
     mpv_set_property_string(player->handle, "pause", start_paused ? "yes" : "no");
+    atomic_store_explicit(&player->frame_render_pending, 0, memory_order_release);
     const char *args[] = {"loadfile", url, "replace", NULL};
     int result = mpv_command(player->handle, args);
     if (result < 0) set_error(player, mpv_error_string(result));
@@ -191,6 +193,7 @@ int mivu_mpv_load(MivuMPV *player, const char *url, const char *headers, double 
 
 int mivu_mpv_stop(MivuMPV *player) {
     if (!player || !player->handle) return -1;
+    atomic_store_explicit(&player->frame_render_pending, 0, memory_order_release);
     const char *args[] = {"stop", NULL};
     return mpv_command(player->handle, args);
 }
@@ -381,21 +384,60 @@ int mivu_mpv_init_renderer(MivuMPV *player) {
     return 0;
 }
 
+int mivu_mpv_get_video_size(MivuMPV *player, int *width, int *height) {
+    if (!player || !player->handle) return -1;
+    int64_t w = 0, h = 0;
+    if (mpv_get_property(player->handle, "dwidth", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+        if (mpv_get_property(player->handle, "width", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+            if (mpv_get_property(player->handle, "video-out-params/dw", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+                if (mpv_get_property(player->handle, "video-out-params/w", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+                    mpv_get_property(player->handle, "video-params/w", MPV_FORMAT_INT64, &w);
+                }
+            }
+        }
+    }
+    if (mpv_get_property(player->handle, "dheight", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+        if (mpv_get_property(player->handle, "height", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+            if (mpv_get_property(player->handle, "video-out-params/dh", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+                if (mpv_get_property(player->handle, "video-out-params/h", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+                    mpv_get_property(player->handle, "video-params/h", MPV_FORMAT_INT64, &h);
+                }
+            }
+        }
+    }
+    if (w <= 0 || h <= 0) {
+        if (player->last_width > 0 && player->last_height > 0) {
+            w = player->last_width;
+            h = player->last_height;
+        }
+    }
+    if (width) *width = (int)w;
+    if (height) *height = (int)h;
+    return (w > 0 && h > 0) ? 0 : -1;
+}
+
 CMSampleBufferRef mivu_mpv_render_sample_buffer(MivuMPV *player, int target_width, int target_height) {
     if (!player || !player->handle || !player->render_context || !player->gl_context) {
         return NULL;
     }
 
+    int force_render = (target_width < 0 || target_height < 0);
+    int width = (target_width > 0) ? target_width : 0;
+    int height = (target_height > 0) ? target_height : 0;
+
     uint64_t flags = mpv_render_context_update(player->render_context);
     player->last_render_update_flags = flags;
     int has_update = (flags & MPV_RENDER_UPDATE_FRAME) != 0;
     int had_callback = atomic_exchange_explicit(&player->has_new_frame, 0, memory_order_acq_rel);
-    if (!has_update && !had_callback) {
+    if (has_update || had_callback) {
+        // Video dimensions can still be unavailable on the first callback.
+        // Keep the render request pending instead of losing that first frame.
+        atomic_store_explicit(&player->frame_render_pending, 1, memory_order_release);
+    }
+    if (!force_render && !atomic_load_explicit(&player->frame_render_pending, memory_order_acquire)) {
         return NULL;
     }
 
-    int width = target_width;
-    int height = target_height;
     if (width <= 0 || height <= 0) {
         if (mivu_mpv_get_video_size(player, &width, &height) < 0 || width <= 0 || height <= 0) {
             return NULL;
@@ -538,6 +580,7 @@ CMSampleBufferRef mivu_mpv_render_sample_buffer(MivuMPV *player, int target_widt
              (unsigned long long)player->last_render_update_flags,
              (unsigned long long)atomic_load_explicit(&player->render_update_callback_count, memory_order_relaxed));
 
+    atomic_store_explicit(&player->frame_render_pending, 0, memory_order_release);
     return sampleBuffer;
 }
 
@@ -547,20 +590,6 @@ void mivu_mpv_flush_renderer(MivuMPV *player) {
         [EAGLContext setCurrentContext:player->gl_context];
         CVOpenGLESTextureCacheFlush(player->texture_cache, 0);
     }
-}
-
-int mivu_mpv_get_video_size(MivuMPV *player, int *width, int *height) {
-    if (!player || !player->handle) return -1;
-    int64_t w = 0, h = 0;
-    if (mpv_get_property(player->handle, "dwidth", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
-        mpv_get_property(player->handle, "width", MPV_FORMAT_INT64, &w);
-    }
-    if (mpv_get_property(player->handle, "dheight", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
-        mpv_get_property(player->handle, "height", MPV_FORMAT_INT64, &h);
-    }
-    if (width) *width = (int)w;
-    if (height) *height = (int)h;
-    return (w > 0 && h > 0) ? 0 : -1;
 }
 
 int mivu_mpv_has_new_frame(MivuMPV *player) {

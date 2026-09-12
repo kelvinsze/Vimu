@@ -90,6 +90,13 @@ public final class MPVSampleBufferView: UIView {
             engine?.onSurfaceReady()
         }
     }
+
+    public override func layoutSubviews() {
+        super.layoutSubviews()
+        if window != nil && bounds.width > 0 && bounds.height > 0 {
+            engine?.surfaceViewAppeared()
+        }
+    }
 }
 
 public typealias MPVOpenGLESView = MPVSampleBufferView
@@ -253,7 +260,7 @@ public final class MPVPlayerEngine: PlayerEngine {
     }
 
     fileprivate func onSurfaceReady() {
-        // Sample buffer view attached to window
+        surfaceViewAppeared()
     }
 
     public func surfaceViewAppeared() {
@@ -261,7 +268,7 @@ public final class MPVPlayerEngine: PlayerEngine {
         let target = sampleBufferTarget
         renderQueue.async { [weak self] in
             guard let rawHandle = handle.rawValue else { return }
-            if let unmanaged = mivuMPVRenderSampleBuffer(rawHandle, 0, 0) {
+            if let unmanaged = mivuMPVRenderSampleBuffer(rawHandle, -1, -1) {
                 let sampleBuffer = unmanaged.takeRetainedValue()
                 target.enqueue(sampleBuffer)
                 Task { @MainActor [weak self] in
@@ -567,4 +574,3 @@ public final class MPVPlayerEngine: PlayerEngine {
     @discardableResult public func prepareSurfaceForLoading() -> Bool { false }
 }
 #endif
-
