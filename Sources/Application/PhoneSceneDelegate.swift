@@ -1,22 +1,13 @@
 import UIKit
-import SwiftUI
 import OSLog
 
 private let logger = Logger(subsystem: "com.kelvinsze.mivu", category: "PhoneSceneDelegate")
 
-/// iPhone Window Scene Delegate managing window presentation and deep linking.
+/// iPhone scene delegate managing deep linking.
+/// The SwiftUI WindowGroup owns the phone window.
 public final class PhoneSceneDelegate: UIResponder, UIWindowSceneDelegate {
 
-    public var window: UIWindow?
-
     public func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        guard let windowScene = (scene as? UIWindowScene) else { return }
-
-        let window = UIWindow(windowScene: windowScene)
-        window.rootViewController = UIHostingController(rootView: MainTabView())
-        self.window = window
-        window.makeKeyAndVisible()
-
         // Handle URL on launch if opened via deep link
         if let url = connectionOptions.urlContexts.first?.url {
             handleIncomingURL(url)
