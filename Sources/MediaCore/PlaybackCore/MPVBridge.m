@@ -10,6 +10,8 @@
 #import <CoreMedia/CoreMedia.h>
 #import <AVFoundation/AVFoundation.h>
 #include <math.h>
+#include <limits.h>
+#include <stdint.h>
 #include <stdatomic.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -23,8 +25,8 @@ struct MivuMPV {
     uint64_t last_render_update_flags;
     _Atomic uint64_t render_update_callback_count;
     _Atomic int has_new_frame;
-    int last_width;
-    int last_height;
+    _Atomic int file_loaded;
+    _Atomic uint64_t cached_video_size;
     _Atomic int frame_render_pending;
 
     EAGLContext *gl_context;
@@ -64,6 +66,38 @@ static void render_update_callback(void *context) {
     }
 }
 
+static int query_video_size(MivuMPV *player, int *width, int *height) {
+    int64_t w = 0, h = 0;
+    if (mpv_get_property(player->handle, "dwidth", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+        if (mpv_get_property(player->handle, "width", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+            if (mpv_get_property(player->handle, "video-out-params/dw", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+                if (mpv_get_property(player->handle, "video-out-params/w", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
+                    mpv_get_property(player->handle, "video-params/w", MPV_FORMAT_INT64, &w);
+                }
+            }
+        }
+    }
+    if (mpv_get_property(player->handle, "dheight", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+        if (mpv_get_property(player->handle, "height", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+            if (mpv_get_property(player->handle, "video-out-params/dh", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+                if (mpv_get_property(player->handle, "video-out-params/h", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
+                    mpv_get_property(player->handle, "video-params/h", MPV_FORMAT_INT64, &h);
+                }
+            }
+        }
+    }
+    int valid_width = w > 0 && w <= INT_MAX;
+    int valid_height = h > 0 && h <= INT_MAX;
+    if (width) *width = valid_width ? (int)w : 0;
+    if (height) *height = valid_height ? (int)h : 0;
+    return (valid_width && valid_height) ? 0 : -1;
+}
+
+static uint64_t pack_video_size(int width, int height) {
+    if (width <= 0 || height <= 0) return 0;
+    return ((uint64_t)(uint32_t)width << 32) | (uint32_t)height;
+}
+
 MivuMPV *mivu_mpv_create(void) {
     MivuMPV *player = calloc(1, sizeof(MivuMPV));
     if (!player) return NULL;
@@ -101,32 +135,38 @@ MivuMPV *mivu_mpv_create(void) {
 
 void mivu_mpv_destroy(MivuMPV *player) {
     if (!player) return;
-    if (player->render_context) {
-        mpv_render_context_set_update_callback(player->render_context, NULL, NULL);
-        mpv_render_context_free(player->render_context);
-        player->render_context = NULL;
-    }
-    if (player->handle) {
-        mpv_terminate_destroy(player->handle);
-        player->handle = NULL;
-    }
+    EAGLContext *previous_context = [EAGLContext currentContext];
     if (player->gl_context) {
         [EAGLContext setCurrentContext:player->gl_context];
-        if (player->fbo) {
-            glDeleteFramebuffers(1, &player->fbo);
-            player->fbo = 0;
-        }
-        if (player->texture_cache) {
-            CVOpenGLESTextureCacheFlush(player->texture_cache, 0);
-            CFRelease(player->texture_cache);
-            player->texture_cache = NULL;
-        }
-        [EAGLContext setCurrentContext:nil];
-        player->gl_context = nil;
     }
-    if (player->pixel_buffer_pool) {
-        CVPixelBufferPoolRelease(player->pixel_buffer_pool);
-        player->pixel_buffer_pool = NULL;
+    @try {
+        if (player->render_context) {
+            mpv_render_context_set_update_callback(player->render_context, NULL, NULL);
+            mpv_render_context_free(player->render_context);
+            player->render_context = NULL;
+        }
+        if (player->handle) {
+            mpv_terminate_destroy(player->handle);
+            player->handle = NULL;
+        }
+        if (player->gl_context) {
+            if (player->fbo) {
+                glDeleteFramebuffers(1, &player->fbo);
+                player->fbo = 0;
+            }
+            if (player->texture_cache) {
+                CVOpenGLESTextureCacheFlush(player->texture_cache, 0);
+                CFRelease(player->texture_cache);
+                player->texture_cache = NULL;
+            }
+            player->gl_context = nil;
+        }
+        if (player->pixel_buffer_pool) {
+            CVPixelBufferPoolRelease(player->pixel_buffer_pool);
+            player->pixel_buffer_pool = NULL;
+        }
+    } @finally {
+        [EAGLContext setCurrentContext:previous_context];
     }
     free(player);
 }
@@ -137,6 +177,8 @@ int mivu_mpv_is_initialized(MivuMPV *player) {
 
 int mivu_mpv_load(MivuMPV *player, const char *url, const char *headers, double start_position, int start_paused) {
     if (!player || !player->handle || !url) return -1;
+    atomic_store_explicit(&player->file_loaded, 0, memory_order_release);
+    atomic_store_explicit(&player->cached_video_size, 0, memory_order_release);
     char *header_storage = headers && headers[0] ? strdup(headers) : NULL;
     mpv_node_list header_list = {0};
     mpv_node header_node = {
@@ -193,6 +235,8 @@ int mivu_mpv_load(MivuMPV *player, const char *url, const char *headers, double 
 
 int mivu_mpv_stop(MivuMPV *player) {
     if (!player || !player->handle) return -1;
+    atomic_store_explicit(&player->file_loaded, 0, memory_order_release);
+    atomic_store_explicit(&player->cached_video_size, 0, memory_order_release);
     atomic_store_explicit(&player->frame_render_pending, 0, memory_order_release);
     const char *args[] = {"stop", NULL};
     return mpv_command(player->handle, args);
@@ -258,9 +302,11 @@ int mivu_mpv_poll_event(MivuMPV *player, int *end_reason, int *end_error) {
     if (!event) return -1;
     switch (event->event_id) {
         case MPV_EVENT_FILE_LOADED: {
+            atomic_store_explicit(&player->file_loaded, 1, memory_order_release);
             return 1;
         }
         case MPV_EVENT_END_FILE: {
+            atomic_store_explicit(&player->file_loaded, 0, memory_order_release);
             mpv_event_end_file *end_file = event->data;
             if (end_file) {
                 if (end_reason) *end_reason = (int)end_file->reason;
@@ -297,6 +343,14 @@ int mivu_mpv_snapshot(MivuMPV *player, double *time, double *duration, int *paus
     if (mpv_get_property(player->handle, "time-pos", MPV_FORMAT_DOUBLE, &current) < 0) current = 0;
     if (mpv_get_property(player->handle, "duration", MPV_FORMAT_DOUBLE, &total) < 0) total = 0;
     if (mpv_get_property(player->handle, "pause", MPV_FORMAT_FLAG, &is_paused) < 0) is_paused = 1;
+    int video_width = 0;
+    int video_height = 0;
+    if (atomic_load_explicit(&player->file_loaded, memory_order_acquire)) {
+        query_video_size(player, &video_width, &video_height);
+    }
+    atomic_store_explicit(&player->cached_video_size,
+                          pack_video_size(video_width, video_height),
+                          memory_order_release);
     if (time) *time = isfinite(current) ? fmax(0, current) : 0;
     if (duration) *duration = isfinite(total) ? fmax(0, total) : 0;
     if (paused) *paused = is_paused;
@@ -341,21 +395,7 @@ static int setup_pool(MivuMPV *player, int width, int height) {
     return 0;
 }
 
-int mivu_mpv_init_renderer(MivuMPV *player) {
-    if (!player || !player->handle) return -1;
-    if (player->render_context) return 0;
-
-    player->gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
-    if (!player->gl_context) {
-        player->gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
-    }
-    if (!player->gl_context) {
-        set_error(player, "Failed to create EAGLContext");
-        return -1;
-    }
-
-    [EAGLContext setCurrentContext:player->gl_context];
-
+static int init_renderer_current_context(MivuMPV *player) {
     CVReturn cvRet = CVOpenGLESTextureCacheCreate(kCFAllocatorDefault, NULL, player->gl_context, NULL, &player->texture_cache);
     if (cvRet != kCVReturnSuccess || !player->texture_cache) {
         set_error(player, "CVOpenGLESTextureCacheCreate failed");
@@ -384,43 +424,44 @@ int mivu_mpv_init_renderer(MivuMPV *player) {
     return 0;
 }
 
-int mivu_mpv_get_video_size(MivuMPV *player, int *width, int *height) {
+int mivu_mpv_init_renderer(MivuMPV *player) {
     if (!player || !player->handle) return -1;
-    int64_t w = 0, h = 0;
-    if (mpv_get_property(player->handle, "dwidth", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
-        if (mpv_get_property(player->handle, "width", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
-            if (mpv_get_property(player->handle, "video-out-params/dw", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
-                if (mpv_get_property(player->handle, "video-out-params/w", MPV_FORMAT_INT64, &w) < 0 || w <= 0) {
-                    mpv_get_property(player->handle, "video-params/w", MPV_FORMAT_INT64, &w);
-                }
-            }
+    if (player->render_context) return 0;
+
+    if (!player->gl_context) {
+        player->gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES3];
+        if (!player->gl_context) {
+            player->gl_context = [[EAGLContext alloc] initWithAPI:kEAGLRenderingAPIOpenGLES2];
         }
     }
-    if (mpv_get_property(player->handle, "dheight", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
-        if (mpv_get_property(player->handle, "height", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
-            if (mpv_get_property(player->handle, "video-out-params/dh", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
-                if (mpv_get_property(player->handle, "video-out-params/h", MPV_FORMAT_INT64, &h) < 0 || h <= 0) {
-                    mpv_get_property(player->handle, "video-params/h", MPV_FORMAT_INT64, &h);
-                }
-            }
-        }
+    if (!player->gl_context) {
+        set_error(player, "Failed to create EAGLContext");
+        return -1;
     }
-    if (w <= 0 || h <= 0) {
-        if (player->last_width > 0 && player->last_height > 0) {
-            w = player->last_width;
-            h = player->last_height;
-        }
+
+    EAGLContext *previous_context = [EAGLContext currentContext];
+    if (![EAGLContext setCurrentContext:player->gl_context]) {
+        set_error(player, "Failed to bind EAGLContext for renderer initialization");
+        return -1;
     }
-    if (width) *width = (int)w;
-    if (height) *height = (int)h;
-    return (w > 0 && h > 0) ? 0 : -1;
+    @try {
+        return init_renderer_current_context(player);
+    } @finally {
+        [EAGLContext setCurrentContext:previous_context];
+    }
 }
 
-CMSampleBufferRef mivu_mpv_render_sample_buffer(MivuMPV *player, int target_width, int target_height) {
-    if (!player || !player->handle || !player->render_context || !player->gl_context) {
-        return NULL;
-    }
+int mivu_mpv_get_video_size(MivuMPV *player, int *width, int *height) {
+    if (!player || !player->handle) return -1;
+    uint64_t packed = atomic_load_explicit(&player->cached_video_size, memory_order_acquire);
+    int cached_width = (int)(packed >> 32);
+    int cached_height = (int)(packed & UINT32_MAX);
+    if (width) *width = cached_width;
+    if (height) *height = cached_height;
+    return (cached_width > 0 && cached_height > 0) ? 0 : -1;
+}
 
+static CMSampleBufferRef render_sample_buffer_current_context(MivuMPV *player, int target_width, int target_height) {
     int force_render = (target_width < 0 || target_height < 0);
     int width = (target_width > 0) ? target_width : 0;
     int height = (target_height > 0) ? target_height : 0;
@@ -445,8 +486,6 @@ CMSampleBufferRef mivu_mpv_render_sample_buffer(MivuMPV *player, int target_widt
     }
     width = (width + 1) & ~1;
     height = (height + 1) & ~1;
-
-    [EAGLContext setCurrentContext:player->gl_context];
 
     if (setup_pool(player, width, height) != 0) {
         return NULL;
@@ -506,8 +545,6 @@ CMSampleBufferRef mivu_mpv_render_sample_buffer(MivuMPV *player, int target_widt
         return NULL;
     }
 
-    player->last_width = width;
-    player->last_height = height;
 
     mpv_opengl_fbo fbo = {
         .fbo = (int)player->fbo,
@@ -584,11 +621,36 @@ CMSampleBufferRef mivu_mpv_render_sample_buffer(MivuMPV *player, int target_widt
     return sampleBuffer;
 }
 
+CMSampleBufferRef mivu_mpv_render_sample_buffer(MivuMPV *player, int target_width, int target_height) {
+    if (!player || !player->handle || !player->render_context || !player->gl_context) {
+        return NULL;
+    }
+
+    EAGLContext *previous_context = [EAGLContext currentContext];
+    if (![EAGLContext setCurrentContext:player->gl_context]) {
+        set_error(player, "Failed to bind EAGLContext for rendering");
+        return NULL;
+    }
+    @try {
+        return render_sample_buffer_current_context(player, target_width, target_height);
+    } @finally {
+        [EAGLContext setCurrentContext:previous_context];
+    }
+}
+
 void mivu_mpv_flush_renderer(MivuMPV *player) {
     if (!player) return;
     if (player->gl_context && player->texture_cache) {
-        [EAGLContext setCurrentContext:player->gl_context];
-        CVOpenGLESTextureCacheFlush(player->texture_cache, 0);
+        EAGLContext *previous_context = [EAGLContext currentContext];
+        if (![EAGLContext setCurrentContext:player->gl_context]) {
+            set_error(player, "Failed to bind EAGLContext for renderer flush");
+            return;
+        }
+        @try {
+            CVOpenGLESTextureCacheFlush(player->texture_cache, 0);
+        } @finally {
+            [EAGLContext setCurrentContext:previous_context];
+        }
     }
 }
 
