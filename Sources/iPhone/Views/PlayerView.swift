@@ -22,15 +22,20 @@ public struct PlayerView: View {
             Color.black.ignoresSafeArea()
 
             playbackSurface
-            .ignoresSafeArea(edges: [.top, .bottom])
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.25)) {
-                    isControlsVisible.toggle()
+                .ignoresSafeArea(edges: [.top, .bottom])
+
+            // Full-screen invisible touch target so tapping anywhere always toggles controls
+            Color.clear
+                .contentShape(Rectangle())
+                .ignoresSafeArea()
+                .onTapGesture {
+                    withAnimation(.easeInOut(duration: 0.25)) {
+                        isControlsVisible.toggle()
+                    }
+                    if isControlsVisible {
+                        scheduleHideControls()
+                    }
                 }
-                if isControlsVisible {
-                    scheduleHideControls()
-                }
-            }
 
             if playerService.session.status == .failed,
                let errorMessage = playerService.session.errorMessage {
@@ -52,6 +57,9 @@ public struct PlayerView: View {
         .statusBar(hidden: !isControlsVisible)
         .onAppear {
             scheduleHideControls()
+            if playerService.renderSurfaceKind == .mpvSampleBuffer || playerService.renderSurfaceKind == .mpvOpenGLES {
+                playerService.activeMPVEngine?.surfaceViewAppeared()
+            }
         }
     }
 
@@ -60,7 +68,7 @@ public struct PlayerView: View {
     @ViewBuilder
     private var playbackSurface: some View {
 #if canImport(MPV)
-        if playerService.renderSurfaceKind == .mpvOpenGLES,
+        if (playerService.renderSurfaceKind == .mpvSampleBuffer || playerService.renderSurfaceKind == .mpvOpenGLES),
            let engine = playerService.activeMPVEngine {
             MPVVideoPlayerView(engine: engine)
         } else {
@@ -180,7 +188,7 @@ public struct PlayerView: View {
                         .clipShape(Circle())
                 }
 
-                if playerService.renderSurfaceKind != .mpvOpenGLES {
+                if playerService.renderSurfaceKind == .nativeAVPlayer {
                     // Aspect ratio and AirPlay are AVPlayer-only controls.
                     Button {
                         playerService.toggleVideoGravity()
@@ -210,7 +218,7 @@ public struct PlayerView: View {
                         .clipShape(Circle())
                 }
 
-                if playerService.renderSurfaceKind != .mpvOpenGLES {
+                if playerService.renderSurfaceKind == .nativeAVPlayer {
                     // MPV's custom surface does not inherit AVPlayer external playback.
                     AirPlayRoutePickerView()
                         .frame(width: 36, height: 36)
@@ -325,6 +333,16 @@ public struct PlayerView: View {
                 .font(.caption2.monospaced())
                 .foregroundColor(.white)
 
+            Text("Surface: \(playerService.renderSurfaceKind.rawValue)")
+                .font(.caption2.monospaced())
+                .foregroundColor(.yellow)
+
+            if let diag = playerService.activeMPVRenderDiagnostic {
+                Text("MPV: \(diag)")
+                    .font(.caption2.monospaced())
+                    .foregroundColor(.green)
+            }
+
             if let url = playerService.session.currentItem?.url {
                 Text("Host: \(url.host ?? "localhost")")
                     .font(.caption2.monospaced())
@@ -374,12 +392,15 @@ public struct MPVVideoPlayerView: UIViewRepresentable {
         self.engine = engine
     }
 
-    public func makeUIView(context: Context) -> MPVOpenGLESView {
-        engine.makeSurfaceView() ?? MPVOpenGLESView(engine: engine)
+    public func makeUIView(context: Context) -> MPVSampleBufferView {
+        let view = engine.makeSampleBufferView() ?? MPVSampleBufferView(engine: engine)
+        view.isUserInteractionEnabled = false
+        return view
     }
 
-    public func updateUIView(_ view: MPVOpenGLESView, context: Context) {
+    public func updateUIView(_ view: MPVSampleBufferView, context: Context) {
         view.engine = engine
+        view.isUserInteractionEnabled = false
     }
 }
 #endif

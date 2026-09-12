@@ -1,3 +1,5 @@
+import AVFoundation
+import CoreMedia
 import Foundation
 
 @_silgen_name("mivu_mpv_create")
@@ -7,7 +9,7 @@ private func mivuMPVDestroy(_ player: UnsafeMutableRawPointer?)
 @_silgen_name("mivu_mpv_is_initialized")
 private func mivuMPVIsInitialized(_ player: UnsafeMutableRawPointer?) -> Int32
 @_silgen_name("mivu_mpv_load")
-private func mivuMPVLoad(_ player: UnsafeMutableRawPointer?, _ url: UnsafePointer<CChar>, _ headers: UnsafePointer<CChar>?, _ start: Double) -> Int32
+private func mivuMPVLoad(_ player: UnsafeMutableRawPointer?, _ url: UnsafePointer<CChar>, _ headers: UnsafePointer<CChar>?, _ start: Double, _ startPaused: Int32) -> Int32
 @_silgen_name("mivu_mpv_stop")
 private func mivuMPVStop(_ player: UnsafeMutableRawPointer?) -> Int32
 @_silgen_name("mivu_mpv_set_paused")
@@ -26,67 +28,85 @@ private func mivuMPVPollEvent(_ player: UnsafeMutableRawPointer?, _ endReason: U
 private func mivuMPVSnapshot(_ player: UnsafeMutableRawPointer?, _ time: UnsafeMutablePointer<Double>?, _ duration: UnsafeMutablePointer<Double>?, _ paused: UnsafeMutablePointer<Int32>?) -> Int32
 @_silgen_name("mivu_mpv_last_error")
 private func mivuMPVLastError(_ player: UnsafeMutableRawPointer?) -> UnsafePointer<CChar>?
-@_silgen_name("mivu_mpv_attach_render")
-private func mivuMPVAttachRender(_ player: UnsafeMutableRawPointer?) -> Int32
-@_silgen_name("mivu_mpv_render")
-private func mivuMPVRender(_ player: UnsafeMutableRawPointer?, _ framebuffer: Int32, _ width: Int32, _ height: Int32) -> Int32
 @_silgen_name("mivu_mpv_set_subtitle_id")
 private func mivuMPVSetSubtitleID(_ player: UnsafeMutableRawPointer?, _ id: Int32) -> Int32
 @_silgen_name("mivu_mpv_add_subtitle")
 private func mivuMPVAddSubtitle(_ player: UnsafeMutableRawPointer?, _ url: UnsafePointer<CChar>) -> Int32
 
+// Plan B: CoreVideo + AVSampleBufferDisplayLayer APIs
+@_silgen_name("mivu_mpv_init_renderer")
+private func mivuMPVInitRenderer(_ player: UnsafeMutableRawPointer?) -> Int32
+@_silgen_name("mivu_mpv_render_sample_buffer")
+private func mivuMPVRenderSampleBuffer(_ player: UnsafeMutableRawPointer?, _ targetWidth: Int32, _ targetHeight: Int32) -> Unmanaged<CMSampleBuffer>?
+@_silgen_name("mivu_mpv_flush_renderer")
+private func mivuMPVFlushRenderer(_ player: UnsafeMutableRawPointer?)
+@_silgen_name("mivu_mpv_get_video_size")
+private func mivuMPVGetVideoSize(_ player: UnsafeMutableRawPointer?, _ width: UnsafeMutablePointer<Int32>?, _ height: UnsafeMutablePointer<Int32>?) -> Int32
+@_silgen_name("mivu_mpv_has_new_frame")
+private func mivuMPVHasNewFrame(_ player: UnsafeMutableRawPointer?) -> Int32
+
 #if canImport(MPV)
-import GLKit
-import OpenGLES
 import UIKit
 
 @MainActor
-public final class MPVOpenGLESView: GLKView {
+public final class MPVSampleBufferView: UIView {
+    public override class var layerClass: AnyClass {
+        AVSampleBufferDisplayLayer.self
+    }
+
+    public var sampleBufferDisplayLayer: AVSampleBufferDisplayLayer {
+        layer as! AVSampleBufferDisplayLayer
+    }
+
     weak var engine: MPVPlayerEngine?
-    private var displayLink: CADisplayLink?
-    private var drawCount = 0
 
     public init(engine: MPVPlayerEngine) {
-        let context = EAGLContext(api: .openGLES3) ?? EAGLContext(api: .openGLES2)!
-        super.init(frame: .zero, context: context)
         self.engine = engine
-        engine.recordSurfaceDiagnostic("surface initialized")
-        enableSetNeedsDisplay = false
-        drawableColorFormat = .RGBA8888
-        displayLink = CADisplayLink(target: DisplayLinkTarget { [weak self] in
-            guard let self, self.window != nil, !self.bounds.isEmpty else { return }
-            self.display()
-        }, selector: #selector(DisplayLinkTarget.tick))
-        displayLink?.isPaused = false
-        displayLink?.add(to: .main, forMode: .common)
+        super.init(frame: .zero)
+        backgroundColor = .black
+        isUserInteractionEnabled = false
+        sampleBufferDisplayLayer.videoGravity = .resizeAspect
+        engine.recordSurfaceDiagnostic("sample buffer view initialized")
     }
 
     @available(*, unavailable)
-    required init(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
+    required init?(coder: NSCoder) { fatalError("init(coder:) has not been implemented") }
 
-    deinit { displayLink?.invalidate() }
+    public func enqueue(_ sampleBuffer: CMSampleBuffer) {
+        if sampleBufferDisplayLayer.status == .failed || sampleBufferDisplayLayer.requiresFlushToResumeDecoding {
+            sampleBufferDisplayLayer.flush()
+        }
+        sampleBufferDisplayLayer.enqueue(sampleBuffer)
+    }
+
+    public func flush() {
+        sampleBufferDisplayLayer.flush()
+    }
 
     public override func didMoveToWindow() {
         super.didMoveToWindow()
-        displayLink?.isPaused = window == nil
         engine?.recordSurfaceDiagnostic("surface attached=\(window != nil)")
-        guard window != nil else { return }
-        Task { @MainActor [weak self] in self?.display() }
+        if window != nil {
+            engine?.onSurfaceReady()
+        }
+    }
+}
+
+public typealias MPVOpenGLESView = MPVSampleBufferView
+
+private final class SampleBufferRendererTarget: @unchecked Sendable {
+    weak var layer: AVSampleBufferDisplayLayer?
+
+    func enqueue(_ sampleBuffer: CMSampleBuffer) {
+        guard let layer else { return }
+        if layer.status == .failed || layer.requiresFlushToResumeDecoding {
+            layer.flush()
+        }
+        layer.enqueue(sampleBuffer)
     }
 
-    public override func draw(_ rect: CGRect) {
-        guard EAGLContext.setCurrent(context) else { return }
-        drawCount += 1
-        engine?.recordSurfaceDiagnostic("surface draw=\(drawCount) size=\(drawableWidth)x\(drawableHeight)")
-        var framebuffer: GLint = 0
-        glGetIntegerv(GLenum(GL_FRAMEBUFFER_BINDING), &framebuffer)
-        _ = engine?.render(framebuffer: Int(framebuffer), width: drawableWidth, height: drawableHeight)
-    }
-
-    private final class DisplayLinkTarget: NSObject {
-        let onTick: () -> Void
-        init(_ onTick: @escaping () -> Void) { self.onTick = onTick }
-        @objc func tick() { onTick() }
+    func flush() {
+        layer?.flush()
     }
 }
 
@@ -115,7 +135,7 @@ private struct MPVControlHandle: @unchecked Sendable {
 
 @MainActor
 public final class MPVPlayerEngine: PlayerEngine {
-    public let renderSurfaceKind: PlaybackRenderSurfaceKind = .mpvOpenGLES
+    public let renderSurfaceKind: PlaybackRenderSurfaceKind = .mpvSampleBuffer
     public private(set) var snapshot = PlaybackEngineSnapshot()
     public let events: AsyncStream<PlaybackEngineEvent>
     public private(set) var isOperational = false
@@ -124,12 +144,17 @@ public final class MPVPlayerEngine: PlayerEngine {
     private var eventTask: Task<Void, Never>?
     private var handle: UnsafeMutableRawPointer?
     private let controlQueue = DispatchQueue(label: "app.mivu.mpv.control", qos: .userInitiated)
-    private var surfaceView: MPVOpenGLESView?
+    private let renderQueue = DispatchQueue(label: "app.mivu.mpv.render", qos: .userInteractive)
+    private var renderTimer: DispatchSourceTimer?
+    private let sampleBufferTarget = SampleBufferRendererTarget()
+    private var sampleBufferView: MPVSampleBufferView?
     private var renderFailureReported = false
     private var renderDiagnosticReported = false
+    private var renderContextReady = false
     private var surfaceDiagnostic = "surface not initialized"
     private var pendingSubtitleTrack: SubtitleTrack?
     private var hasLoadedFile = false
+    private var renderedFrameCount = 0
 
     public init() {
         var continuation: AsyncStream<PlaybackEngineEvent>.Continuation?
@@ -148,36 +173,102 @@ public final class MPVPlayerEngine: PlayerEngine {
     deinit {
         eventTask?.cancel()
         eventContinuation?.finish()
-        if let handle { mivuMPVDestroy(handle) }
+        renderTimer?.cancel()
+        renderTimer = nil
+        sampleBufferTarget.layer = nil
+        if let handle {
+            renderQueue.sync {
+                mivuMPVDestroy(handle)
+            }
+        }
     }
 
-    public func makeSurfaceView() -> MPVOpenGLESView? {
+    public func makeSampleBufferView() -> MPVSampleBufferView? {
         guard isOperational else { return nil }
-        if let surfaceView { return surfaceView }
-        let view = MPVOpenGLESView(engine: self)
-        surfaceView = view
+        if let sampleBufferView { return sampleBufferView }
+        let view = MPVSampleBufferView(engine: self)
+        sampleBufferView = view
+        sampleBufferTarget.layer = view.sampleBufferDisplayLayer
         return view
     }
 
-    /// libmpv requires its render context before a video output is created.
-    /// Create it against the reusable GLKView context before `loadfile`.
+    public func makeSurfaceView() -> MPVSampleBufferView? {
+        makeSampleBufferView()
+    }
+
     @discardableResult
     public func prepareSurfaceForLoading() -> Bool {
-        guard let surfaceView = makeSurfaceView() else {
-            fail("Unable to prepare the MPV OpenGL ES context")
+        guard isOperational else {
+            fail("MPV framework is unavailable")
             return false
         }
-        let context = surfaceView.context
-        guard EAGLContext.setCurrent(context) else {
-            fail("Unable to prepare the MPV OpenGL ES context")
+        _ = makeSampleBufferView()
+        let handle = MPVControlHandle(handle)
+        var initResult: Int32 = -1
+        renderQueue.sync {
+            initResult = mivuMPVInitRenderer(handle.rawValue)
+        }
+        if initResult < 0 {
+            fail("Unable to initialize MPV CoreVideo renderer")
             return false
         }
-        let result = mivuMPVAttachRender(handle)
-        if result < 0 {
-            fail("Unable to create the MPV OpenGL ES renderer")
-            return false
-        }
+        renderContextReady = true
+        startRenderTimer()
         return true
+    }
+
+    private func startRenderTimer() {
+        guard renderTimer == nil, let handle else { return }
+        let timer = DispatchSource.makeTimerSource(queue: renderQueue)
+        timer.schedule(deadline: .now(), repeating: .milliseconds(16), leeway: .milliseconds(2))
+        let mpvHandle = MPVControlHandle(handle)
+        let target = sampleBufferTarget
+        timer.setEventHandler { [weak self] in
+            guard let rawHandle = mpvHandle.rawValue else { return }
+            if let unmanaged = mivuMPVRenderSampleBuffer(rawHandle, 0, 0) {
+                let sampleBuffer = unmanaged.takeRetainedValue()
+                target.enqueue(sampleBuffer)
+                Task { @MainActor [weak self] in
+                    self?.onFrameRendered()
+                }
+            }
+        }
+        timer.resume()
+        renderTimer = timer
+    }
+
+    private func stopRenderTimer() {
+        renderTimer?.cancel()
+        renderTimer = nil
+    }
+
+    fileprivate func onFrameRendered() {
+        renderedFrameCount += 1
+        recordSurfaceDiagnostic("frames rendered=\(renderedFrameCount)")
+        if !renderDiagnosticReported {
+            renderDiagnosticReported = true
+            let diag = renderDiagnostic()
+            SSDPService.shared.recordPlaybackDebug("MPV_RENDER \(diag)")
+        }
+    }
+
+    fileprivate func onSurfaceReady() {
+        // Sample buffer view attached to window
+    }
+
+    public func surfaceViewAppeared() {
+        let handle = MPVControlHandle(handle)
+        let target = sampleBufferTarget
+        renderQueue.async { [weak self] in
+            guard let rawHandle = handle.rawValue else { return }
+            if let unmanaged = mivuMPVRenderSampleBuffer(rawHandle, 0, 0) {
+                let sampleBuffer = unmanaged.takeRetainedValue()
+                target.enqueue(sampleBuffer)
+                Task { @MainActor [weak self] in
+                    self?.onFrameRendered()
+                }
+            }
+        }
     }
 
     public func latestRenderDiagnostic() -> String {
@@ -197,6 +288,9 @@ public final class MPVPlayerEngine: PlayerEngine {
         pendingSubtitleTrack = nil
         renderFailureReported = false
         renderDiagnosticReported = false
+        renderedFrameCount = 0
+        let startPaused: Int32 = 0
+        startRenderTimer()
         updateSnapshot {
             $0.status = .loading
             $0.currentTime = request.startPosition
@@ -224,7 +318,7 @@ public final class MPVPlayerEngine: PlayerEngine {
         controlQueue.async { [weak self] in
             let result = sourceURL.absoluteString.withCString { url in
                 headerString.withCString { headers in
-                    mivuMPVLoad(handle.rawValue, url, headerString.isEmpty ? nil : headers, request.startPosition)
+                    mivuMPVLoad(handle.rawValue, url, headerString.isEmpty ? nil : headers, request.startPosition, startPaused)
                 }
             }
             guard result < 0 else { return }
@@ -235,6 +329,7 @@ public final class MPVPlayerEngine: PlayerEngine {
 
     public func play() {
         guard isOperational else { return }
+        startRenderTimer()
         let handle = MPVControlHandle(handle)
         controlQueue.async { _ = mivuMPVSetPaused(handle.rawValue, 0) }
         updateSnapshot { $0.status = .playing; $0.errorMessage = nil }
@@ -248,10 +343,16 @@ public final class MPVPlayerEngine: PlayerEngine {
     }
 
     public func stop() {
+        stopRenderTimer()
+        sampleBufferTarget.flush()
         let handle = MPVControlHandle(handle)
         controlQueue.async { _ = mivuMPVStop(handle.rawValue) }
+        renderQueue.async {
+            mivuMPVFlushRenderer(handle.rawValue)
+        }
         hasLoadedFile = false
         pendingSubtitleTrack = nil
+        renderedFrameCount = 0
         updateSnapshot {
             $0.status = .stopped
             $0.currentTime = 0
@@ -329,21 +430,6 @@ public final class MPVPlayerEngine: PlayerEngine {
         }
     }
 
-    fileprivate func render(framebuffer: Int, width: Int, height: Int) -> Int32 {
-        guard let handle, width > 0, height > 0 else { return -1 }
-        if mivuMPVAttachRender(handle) < 0 {
-            reportRenderFailure()
-            return -1
-        }
-        let result = mivuMPVRender(handle, Int32(framebuffer), Int32(width), Int32(height))
-        if !renderDiagnosticReported {
-            renderDiagnosticReported = true
-            SSDPService.shared.recordPlaybackDebug("MPV_RENDER \(renderDiagnostic())")
-        }
-        if result < 0 { reportRenderFailure() }
-        return result
-    }
-
     private func pollEventsOnControlQueue() async {
         guard isOperational else { return }
         let handle = MPVControlHandle(handle)
@@ -389,13 +475,19 @@ public final class MPVPlayerEngine: PlayerEngine {
                     $0.errorMessage = nil
                 }
                 eventContinuation?.yield(.diagnostic(.itemStatus(rawValue: 1, duration: snapshot.duration, errorMessage: nil)))
+                surfaceViewAppeared()
             case let .ended(reason, error, message):
                 if reason == 4 || error < 0 {
                     let errorMessage = message ?? "MPV playback ended with an error"
                     SSDPService.shared.recordPlaybackDebug("MPV_END_FILE reason=\(reason) error=\(error) message=\(errorMessage)")
                     fail(errorMessage)
                 } else if !hasLoadedFile {
-                    SSDPService.shared.recordPlaybackDebug("MPV_END_FILE ignored_before_load reason=\(reason) error=\(error)")
+                    // mpv may emit END_FILE before FILE_LOADED when it cannot
+                    // find a suitable decoder or demuxer. Treat this as an
+                    // error so the fallback path can trigger.
+                    let errorMessage = message ?? "MPV failed to load the file (reason=\(reason))"
+                    SSDPService.shared.recordPlaybackDebug("MPV_END_FILE before_load reason=\(reason) error=\(error) message=\(errorMessage)")
+                    fail(errorMessage)
                 } else {
                     updateSnapshot { $0.status = .stopped }
                     eventContinuation?.yield(.ended)
@@ -414,6 +506,7 @@ public final class MPVPlayerEngine: PlayerEngine {
     private func updateSnapshot(_ update: (inout PlaybackEngineSnapshot) -> Void) {
         var next = snapshot
         update(&next)
+        guard next != snapshot else { return }
         snapshot = next
         eventContinuation?.yield(.snapshot(next))
     }
@@ -470,6 +563,8 @@ public final class MPVPlayerEngine: PlayerEngine {
     public func setVolume(_ volume: Float) {}
     public func setMuted(_ isMuted: Bool) {}
     public func setSubtitleTrack(_ track: SubtitleTrack?) {}
+    public func surfaceViewAppeared() {}
     @discardableResult public func prepareSurfaceForLoading() -> Bool { false }
 }
 #endif
+

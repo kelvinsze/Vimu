@@ -24,6 +24,7 @@ public protocol PlayerEngine: AnyObject {
 
 public enum PlaybackRenderSurfaceKind: String, Equatable, Sendable {
     case nativeAVPlayer
+    case mpvSampleBuffer
     case mpvOpenGLES
 }
 

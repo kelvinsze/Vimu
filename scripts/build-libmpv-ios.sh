@@ -195,7 +195,9 @@ build_ffmpeg() {
         --disable-gpl --disable-nonfree --disable-autodetect --disable-avdevice \
         --enable-network --enable-securetransport \
         --enable-protocol=file,http,https,tcp,tls \
-        --enable-videotoolbox
+        --enable-videotoolbox \
+        --enable-decoder=vp8,vp9,opus,vorbis,flac,aac,h264,hevc,av1,mp3,pcm_s16le,pcm_s24le,ass,srt,subrip,webvtt \
+        --enable-demuxer=matroska,mov,mpegts,hls,dash,mp3,ogg,flac,avi,concat,srt,ass,webvtt
     make -j "$JOBS"
     make install
     popd >/dev/null

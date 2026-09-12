@@ -1,8 +1,9 @@
 import SwiftUI
+import Combine
 
 /// Main dashboard view for Mivu iPhone app.
 public struct HomeView: View {
-    @ObservedObject var playerService = PlayerService.shared
+    private let playerService = PlayerService.shared
     @ObservedObject var history = PlaybackHistory.shared
 
     @State private var inputUrlText: String = ""
@@ -44,7 +45,7 @@ public struct HomeView: View {
             .onAppear {
                 checkClipboard()
             }
-            .onChange(of: playerService.session.currentItem?.id) { _, itemID in
+            .onReceive(playerService.$session.map { $0.currentItem?.id }.removeDuplicates()) { itemID in
                 // DLNA/Web Remote starts playback outside this view's buttons.
                 // Personal-media screens own their own player cover; presenting
                 // another one here makes the first launch immediately dismiss.
@@ -54,9 +55,10 @@ public struct HomeView: View {
                 }
             }
             .safeAreaInset(edge: .bottom) {
-                if playerService.session.currentItem != nil {
-                    miniPlayerBar
-                }
+                HomeMiniPlayerBar(
+                    playerService: playerService,
+                    isShowingPlayerSheet: $isShowingPlayerSheet
+                )
             }
             .fullScreenCover(isPresented: $isShowingPlayerSheet) {
                 PlayerView()
@@ -234,58 +236,6 @@ public struct HomeView: View {
         .cornerRadius(12)
     }
 
-    private var miniPlayerBar: some View {
-        HStack {
-            Button {
-                isShowingPlayerSheet = true
-            } label: {
-                HStack(spacing: 12) {
-                    Image(systemName: "film.fill")
-                        .font(.title3)
-                        .foregroundColor(.blue)
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(playerService.session.currentItem?.title ?? "Playing Media")
-                            .font(.subheadline.bold())
-                            .foregroundColor(.primary)
-                            .lineLimit(1)
-
-                        Text("\(SOAPParser.formatUPnPTime(playerService.session.currentTime)) / \(SOAPParser.formatUPnPTime(playerService.session.duration))")
-                            .font(.caption.monospacedDigit())
-                            .foregroundColor(.secondary)
-                    }
-                }
-            }
-
-            Spacer()
-
-            Button {
-                playerService.togglePlayPause()
-            } label: {
-                Image(systemName: playerService.session.status == .playing ? "pause.fill" : "play.fill")
-                    .font(.title3)
-                    .foregroundColor(.primary)
-                    .padding(8)
-            }
-
-            Button {
-                playerService.stop()
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.caption.bold())
-                    .foregroundColor(.secondary)
-                    .padding(8)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 10)
-        .background(.ultraThinMaterial)
-        .cornerRadius(14)
-        .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 8)
-    }
-
     // MARK: - Actions
 
     private func playHistoryItem(_ item: MediaItem) {
@@ -344,5 +294,64 @@ public struct HomeView: View {
 
     private func checkClipboard() {
         clipboardURL = URLSource.detectPlayableURLInClipboard()
+    }
+}
+
+private struct HomeMiniPlayerBar: View {
+    @ObservedObject var playerService: PlayerService
+    @Binding var isShowingPlayerSheet: Bool
+
+    var body: some View {
+        if playerService.session.currentItem != nil {
+            HStack {
+                Button {
+                    isShowingPlayerSheet = true
+                } label: {
+                    HStack(spacing: 12) {
+                        Image(systemName: "film.fill")
+                            .font(.title3)
+                            .foregroundColor(.blue)
+
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(playerService.session.currentItem?.title ?? "Playing Media")
+                                .font(.subheadline.bold())
+                                .foregroundColor(.primary)
+                                .lineLimit(1)
+
+                            Text("\(SOAPParser.formatUPnPTime(playerService.session.currentTime)) / \(SOAPParser.formatUPnPTime(playerService.session.duration))")
+                                .font(.caption.monospacedDigit())
+                                .foregroundColor(.secondary)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                Button {
+                    playerService.togglePlayPause()
+                } label: {
+                    Image(systemName: playerService.session.status == .playing ? "pause.fill" : "play.fill")
+                        .font(.title3)
+                        .foregroundColor(.primary)
+                        .padding(8)
+                }
+
+                Button {
+                    playerService.stop()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.caption.bold())
+                        .foregroundColor(.secondary)
+                        .padding(8)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial)
+            .cornerRadius(14)
+            .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+        }
     }
 }

@@ -62,17 +62,22 @@ public final class PlayerService: ObservableObject {
     private func setupAudioSession() {
         do {
             let audioSession = AVAudioSession.sharedInstance()
-            try audioSession.setCategory(.playback, mode: .moviePlayback, options: [.allowAirPlay, .allowBluetoothHFP, .allowBluetoothA2DP])
+            // moviePlayback mode handles AirPlay and Bluetooth routing automatically.
+            // Passing explicit options with moviePlayback triggers OSStatus error -50 (kAudio_ParamError).
+            try audioSession.setCategory(.playback, mode: .moviePlayback)
             try audioSession.setActive(true)
             logger.info("AVAudioSession configured for background video playback.")
         } catch {
             logger.error("Failed to configure AVAudioSession: \(error.localizedDescription)")
+            try? AVAudioSession.sharedInstance().setCategory(.playback)
+            try? AVAudioSession.sharedInstance().setActive(true)
         }
     }
 
     // MARK: - Playback Control
 
     public func loadAndPlay(item: MediaItem, origin: String = #function, recordHistory: Bool = true) {
+        setupAudioSession()
         mpvFallbackAttempted = false
         subtitleTracks = item.subtitleTracks ?? []
         let subtitleKey = subtitlePreferenceKey(for: item)
@@ -298,16 +303,20 @@ public final class PlayerService: ObservableObject {
 
             let previousStatus = session.status
             let statusChanged = previousStatus != snapshot.status
-            session.status = snapshot.status
-            session.currentTime = max(0, snapshot.currentTime)
+            var nextSession = session
+            nextSession.status = snapshot.status
+            nextSession.currentTime = max(0, snapshot.currentTime)
             if snapshot.duration > 0 {
-                session.duration = snapshot.duration
+                nextSession.duration = snapshot.duration
             }
-            session.bufferedTime = snapshot.bufferedTime
-            session.playbackRate = snapshot.playbackRate
-            session.isMuted = snapshot.isMuted
-            session.volume = snapshot.volume
-            session.errorMessage = snapshot.errorMessage
+            nextSession.bufferedTime = snapshot.bufferedTime
+            nextSession.playbackRate = snapshot.playbackRate
+            nextSession.isMuted = snapshot.isMuted
+            nextSession.volume = snapshot.volume
+            nextSession.errorMessage = snapshot.errorMessage
+            if nextSession != session {
+                session = nextSession
+            }
             if snapshot.status == .playing {
                 reportPlaybackProgress(force: false, isPaused: false, isStopped: false)
             }
@@ -379,7 +388,16 @@ public final class PlayerService: ObservableObject {
     private func handlePlaybackFailure() {
         let hasServerAlternative = session.currentItem?.playbackAlternatives?.isEmpty == false
         if engine is MPVPlayerEngine, !mpvFallbackAttempted, !hasServerAlternative {
-            fallbackToNativeAfterMPVFailure()
+            // Skip the AVPlayer fallback for containers that AVPlayer definitely
+            // cannot decode (WebM, MKV, etc.). Falling back would just produce a
+            // second silent failure and hide the original MPV error from the user.
+            let container = session.currentItem?.playbackRequest.containerHint ?? ""
+            let nativeUnsupported: Set<String> = ["webm", "mkv", "avi", "flv", "ogv"]
+            if nativeUnsupported.contains(container) {
+                SSDPService.shared.recordPlaybackDebug("FALLBACK skipped_native_unsupported container=\(container) engine=\(engineName) error=\(session.errorMessage ?? "unknown")")
+            } else {
+                fallbackToNativeAfterMPVFailure()
+            }
             return
         }
         if engine is AVPlayerEngine,
